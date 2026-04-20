@@ -1,3 +1,86 @@
+# Git project
+
+
+Before starting to dev, don't forget to ```git pull origin main```
+
+
+## Installation procedure
+
+Clone the project with :
+
+### HTTPS : ```git clone https://github.com/MaxouZouzouAlou/enssatWebFront.git```
+
+### SSH : ```git clone git@github.com:MaxouZouzouAlou/enssatWebFront.git```
+
+## Branches
+
+
+### Branch guidelines
+Branch names start with the following names :
+- ```feat/...```
+- ```fix/...```
+- ```delete/...```
+- ```docs/...```
+
+To create a new branch : ```git checkout -b <branch_name>```
+
+To switch to a created branch : ```git checkout <branch_name>```
+
+
+### Commit practices
+Merging / pushing to main requires verification.
+
+Commits should start with the following names :
+- ```feat/...```
+- ```fix/...```
+- ```delete/...```
+- ```docs/...```
+
+#### To push your work
+```
+git add .   (adds every file not present in the .gitignore file)
+or
+git add path/to/file.png   (adds a specific file)
+
+git commit -m "Commit description message"
+
+git push origin <branch_name>   (main one)
+or
+git push <remote_branch> <current_branch>   (push to another branch)
+```
+
+If this is the first push on a branch : ```git push --set-upstream origin <branch_name>```
+
+
+### Stashing
+If you have unsaved changes and want to do actions on another branch, stash : ```git stash push -m "description message"```
+
+To see all available stashes : ```git stash list```
+To see a specific stash : ```git stash show stash@{<stash_number>}```
+
+To restore stashes :
+```
+git stash pop   (restores then delete)
+or
+git stash apply stash@{<stash_number>}
+```
+
+To make a stash as a new branch : ```git stash branch <branch_name> ```
+
+
+### Merging
+
+Before merging the contents of your branch, commit them using what's described in the ["push your work"](#to-push-your-work-) part.
+
+Once that's done, merge : ```git merge <current_branch>```
+
+To abord a merge : ```git merge --abort```
+
+
+---
+
+
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
