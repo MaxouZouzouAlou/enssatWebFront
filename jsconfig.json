@@ -3,8 +3,8 @@
     "ignoreDeprecations": "6.0",
     "baseUrl": "src",
     "paths": {
-      "@img/*": ["asset/img/*"],
-      "@asset/*": ["asset/*"]
+      "@img/*": ["assets/img/*"],
+      "@assets/*": ["assets/*"]
     }
   },
   "include": ["src"]
