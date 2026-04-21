@@ -1,8 +1,20 @@
 import { render } from '@testing-library/react';
 import App from './App';
 
-test('renders app root', () => {
-  const { container } = render(<App />);
+jest.mock('../services/auth-client', () => ({
+  authClient: {
+    useSession: () => ({
+      data: null,
+      isPending: false,
+      refetch: jest.fn()
+    }),
+    signOut: jest.fn()
+  },
+  fetchAuthProfile: jest.fn()
+}));
 
-  expect(container.querySelector('.App')).toBeInTheDocument();
+test('renders app root', () => {
+  const { getByText } = render(<App />);
+
+  expect(getByText('Acceder a votre compte')).toBeInTheDocument();
 });
