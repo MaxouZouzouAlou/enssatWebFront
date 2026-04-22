@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import shoppingCartService from '../../services/shoppingCart';
 
 export default function CartItem({ item, onRemove = () => {}, onUpdate = () => {} }) {
   const p = item.product;
@@ -30,17 +29,10 @@ export default function CartItem({ item, onRemove = () => {}, onUpdate = () => {
     }
     try {
       if (roundedQty <= 0) {
-        await shoppingCartService.removerProductsFromShoppingCart(6, id);
-        onRemove(id);
+        await onRemove(id);
         return;
       }
-      const delta = roundedQty - currentQty;
-      if (delta > 0) {
-        await shoppingCartService.addProductToShoppingCart(6, id, delta);
-      } else {
-        await shoppingCartService.removeProductFromShoppingCart(6, id, -delta);
-      }
-      onUpdate(id, roundedQty);
+      await onUpdate(id, roundedQty);
     } catch (err) {
       console.error('Failed to update product quantity', err);
       setLocalQty(String(item.quantity));
@@ -57,12 +49,11 @@ export default function CartItem({ item, onRemove = () => {}, onUpdate = () => {
         <button
           onClick={async () => {
             try {
-              await shoppingCartService.removeProductFromShoppingCart(6, id, step);
               const newQty = Math.max(0, Number(item.quantity) - step);
               if (newQty <= 0) {
-                onRemove(id);
+                await onRemove(id);
               } else {
-                onUpdate(id, newQty);
+                await onUpdate(id, newQty);
               }
             } catch (err) {
               console.error('Failed to remove product from shopping cart', err);
@@ -87,8 +78,7 @@ export default function CartItem({ item, onRemove = () => {}, onUpdate = () => {
         <button
           onClick={async () => {
             try {
-              await shoppingCartService.addProductToShoppingCart(6, id, step);
-              onUpdate(id, Number(item.quantity) + step);
+              await onUpdate(id, Number(item.quantity) + step);
             } catch (err) {
               console.error('Failed to add product to shopping cart', err);
             }
@@ -101,8 +91,7 @@ export default function CartItem({ item, onRemove = () => {}, onUpdate = () => {
         <button
           onClick={async () => {
             try {
-              await shoppingCartService.removerProductsFromShoppingCart(6, id);
-              onRemove(id);
+              await onRemove(id);
             } catch (err) {
               console.error('Failed to remove all products from shopping cart', err);
             }
