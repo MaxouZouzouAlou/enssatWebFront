@@ -10,7 +10,7 @@ export default function CollectionGrid() {
 				<SectionHeader
 					eyebrow="Marché local"
 					title="Collections de saison"
-					actions={<Link className="text-sm font-bold text-primary-700 hover:text-primary-800" to="/achat">Voir le catalogue</Link>}
+					actions={<Link className="text-sm font-bold text-primary-700 hover:text-primary-800" to="/produits">Voir le catalogue</Link>}
 				/>
 
 				<div className="mt-10 grid gap-5 md:grid-cols-12">

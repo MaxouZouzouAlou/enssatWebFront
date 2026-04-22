@@ -74,7 +74,7 @@ export default function ProfessionalDashboard({ accountType = 'particulier', pro
 	if (!isProfessional) {
 		return (
 			<RestrictedDashboardState
-				title="Dashboard vendeur indisponible"
+				title="Espace pro indisponible"
 				message="Cette page est reservee aux comptes professionnels verifies. Connectez-vous avec un compte pro pour acceder a vos statistiques de vente."
 			/>
 		);
@@ -83,7 +83,7 @@ export default function ProfessionalDashboard({ accountType = 'particulier', pro
 	if (!professionalId) {
 		return (
 			<RestrictedDashboardState
-				title="Dashboard vendeur indisponible"
+				title="Espace pro indisponible"
 				message="Le profil professionnel n est pas encore disponible pour cette session."
 			/>
 		);
@@ -110,7 +110,7 @@ export default function ProfessionalDashboard({ accountType = 'particulier', pro
 		<PageShell contentClassName="grid grid-cols-12 gap-5">
 			<header className="col-span-12 flex flex-col justify-between gap-4 md:flex-row md:items-start">
 				<SectionHeader
-					eyebrow="Espace vendeur"
+					eyebrow="Espace pro"
 					title="Dashboard professionnel"
 				>
 					<p>

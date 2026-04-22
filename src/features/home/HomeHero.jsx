@@ -14,7 +14,7 @@ export default function HomeHero({ isAuthenticated = false }) {
 					pour commander plus simplement, plus près, et au bon moment.
 				</p>
 				<div className="mt-8 flex flex-col gap-3 sm:flex-row">
-					<ActionLink className="h-12 px-6" to="/achat">
+					<ActionLink className="h-12 px-6" to="/produits">
 						Découvrir les produits
 					</ActionLink>
 					{isAuthenticated ? (

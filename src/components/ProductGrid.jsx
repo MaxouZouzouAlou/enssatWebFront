@@ -13,7 +13,7 @@ export default function ProductGrid({ products = [], addToCart = () => {} }) {
           <ProductCard key={p.idProduit ?? p.id ?? p._id ?? idx} product={p} onAdd={addToCart} />
         ))
       ) : (
-        <div className="col-span-full text-center text-gray-600 py-8">Aucun produit trouvé.</div>
+        <p className="col-span-full text-center text-secondary-500 py-12">Aucun produit disponible.</p>
       )}
     </div>
   );

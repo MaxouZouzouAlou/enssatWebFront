@@ -42,7 +42,7 @@ export default function AccountMenu({ isAuthenticated, isProfessional, onClose, 
 	}
 
 	const items = isProfessional
-		? [...commonAuthenticatedItems, { icon: 'monitoring', label: 'Dashboard vendeur', path: '/dashboard-producteur' }]
+		? [...commonAuthenticatedItems, { icon: 'monitoring', label: 'Espace pro', path: '/espace-pro' }]
 		: commonAuthenticatedItems;
 
 	return (

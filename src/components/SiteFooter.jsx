@@ -5,7 +5,7 @@ function getFooterLinks({ isAuthenticated, isProfessional }) {
 		{
 			title: 'Explorer',
 			links: [
-				['Produits locaux', '/achat'],
+				['Produits locaux', '/produits'],
 				['Panier', '/panier'],
 				...(isAuthenticated ? [] : [['Créer un compte', '/register']])
 			]
@@ -13,7 +13,7 @@ function getFooterLinks({ isAuthenticated, isProfessional }) {
 		{
 			title: 'Producteurs',
 			links: [
-				...(isProfessional ? [['Espace vendeur', '/dashboard-producteur']] : []),
+				...(isProfessional ? [['Espace pro', '/espace-pro']] : []),
 				...(isAuthenticated ? [] : [['Devenir producteur', '/register']])
 			]
 		},

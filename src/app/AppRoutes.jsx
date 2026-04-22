@@ -5,23 +5,23 @@ import SiteFooter from '../components/SiteFooter.jsx';
 import useAuthProfile from '../features/auth/useAuthProfile';
 import useCart from '../hooks/useCart';
 import AccountPage from '../pages/AccountPage.jsx';
-import AchatPage from '../pages/AchatPage.jsx';
 import IncidentTicketsPage from '../pages/IncidentTicketsPage.jsx';
 import HomePage from '../pages/HomePage.jsx';
 import LoginPage from '../pages/LoginPage.jsx';
 import PanierPage from '../pages/PanierPage.jsx';
 import ProfessionalDashboardPage from '../pages/ProfessionalDashboardPage.jsx';
+import ProductsPage from '../pages/ProductsPage.jsx';
 import RegisterPage from '../pages/RegisterPage.jsx';
 import { authClient } from '../services/auth-client';
 
-const protectedPaths = new Set(['/compte', '/dashboard-producteur', '/tickets-incidents']);
+const protectedPaths = new Set(['/compte', '/dashboard-producteur', '/espace-pro', '/tickets-incidents']);
 
 export function getLogoutRedirectPath(pathname) {
 	return protectedPaths.has(pathname) ? '/' : null;
 }
 
-function MarketplaceLayout({ addToCart, cartItems, removeFromCart, updateQuantity }) {
-	return <Outlet context={{ addToCart, cartItems, removeFromCart, updateQuantity }} />;
+function MarketplaceLayout({ addToCart, cartError, cartItems, clearCartError, removeFromCart, updateQuantity }) {
+	return <Outlet context={{ addToCart, cartError, cartItems, clearCartError, removeFromCart, updateQuantity }} />;
 }
 
 function AuthLayout() {
@@ -41,7 +41,7 @@ export default function AppRoutes() {
 	const location = useLocation();
 	const { clearProfile, profileState, refreshSession, sessionState } = useAuthProfile();
 	const profile = profileState.data?.profile;
-	const { cartItems, cartCount, addToCart, removeFromCart, updateQuantity } = useCart(profile);
+	const { cartError, cartItems, cartCount, addToCart, clearCartError, removeFromCart, updateQuantity } = useCart(profile);
 
 	const refreshSessionAndOpenAccount = async () => {
 		await refreshSession();
@@ -103,7 +103,9 @@ export default function AppRoutes() {
 						cartItems={cartItems}
 						isAuthenticated={isAuthenticated}
 						isProfessional={isProfessional}
+						removeFromCart={removeFromCart}
 						onSignOut={signOut}
+						updateQuantity={updateQuantity}
 					/>
 					<div>
 						<PageTransition>
@@ -116,11 +118,25 @@ export default function AppRoutes() {
 				<Route path="/" element={<HomePage isAuthenticated={isAuthenticated} isProfessional={isProfessional} />} />
 				<Route
 					path="/dashboard-producteur"
+					element={<Navigate to="/espace-pro" replace />}
+				/>
+				<Route
+					path="/espace-pro"
 					element={requireProfessional(<ProfessionalDashboardPage accountType={accountType} professionalId={professionalId} />)}
 				/>
 				<Route path="/tickets-incidents" element={requireAuth(<IncidentTicketsPage />)} />
-				<Route element={<MarketplaceLayout addToCart={addToCart} cartItems={cartItems} removeFromCart={removeFromCart} updateQuantity={updateQuantity} />}>
-					<Route path="/achat" element={<AchatPage />} />
+				<Route element={
+					<MarketplaceLayout
+						addToCart={addToCart}
+						cartError={cartError}
+						cartItems={cartItems}
+						clearCartError={clearCartError}
+						removeFromCart={removeFromCart}
+						updateQuantity={updateQuantity}
+					/>
+				}>
+					<Route path="/achat" element={<Navigate to="/produits" replace />} />
+					<Route path="/produits" element={<ProductsPage />} />
 					<Route path="/panier" element={<PanierPage />} />
 				</Route>
 				<Route

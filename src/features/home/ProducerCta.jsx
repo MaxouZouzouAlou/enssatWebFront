@@ -37,11 +37,11 @@ export default function ProducerCta({ isAuthenticated = false, isProfessional = 
 function getCtaContent({ isAuthenticated, isProfessional }) {
 	if (isProfessional) {
 		return {
-			eyebrow: 'Espace producteur',
+			eyebrow: 'Espace pro',
 			title: 'Vendez mieux, gardez la main.',
 			description: 'Gérez vos informations, vos entreprises, vos lieux de vente, vos produits, les stocks et les commandes depuis votre espace professionnel.',
-			primaryLabel: 'Voir le dashboard',
-			primaryPath: '/dashboard-producteur',
+			primaryLabel: 'Ouvrir l espace pro',
+			primaryPath: '/espace-pro',
 			secondaryLabel: 'Consulter mon compte',
 			secondaryPath: '/compte'
 		};

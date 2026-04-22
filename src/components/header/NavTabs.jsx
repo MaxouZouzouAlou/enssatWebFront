@@ -5,8 +5,8 @@ export default function NavTabs({ className = '', isProfessional = false, onNavi
   const navigate = useNavigate();
 
   const tabs = [
-    { label: 'Nos produits', path: '/achat' },
-    ...(isProfessional ? [{ label: 'Dashboard', path: '/dashboard-producteur' }] : []),
+    { label: 'Nos produits', path: '/produits' },
+    ...(isProfessional ? [{ label: 'Espace pro', path: '/espace-pro' }] : []),
   ];
 
   const isActive = (path) => pathname === path || pathname.startsWith(path + '/');

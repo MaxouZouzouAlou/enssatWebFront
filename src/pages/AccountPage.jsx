@@ -53,11 +53,11 @@ export default function AccountPage({ isProfessional = false, profile, profileSt
 						<SoftPanel
 							as="button"
 							type="button"
-							onClick={() => navigate('/dashboard-producteur')}
+							onClick={() => navigate('/espace-pro')}
 							className="text-left hover:bg-primary-50"
 						>
 							<p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Professionnel</p>
-							<p className="mt-2 text-lg font-semibold text-secondary-900">Dashboard vendeur</p>
+							<p className="mt-2 text-lg font-semibold text-secondary-900">Espace pro</p>
 						</SoftPanel>
 					) : null}
 				</div>

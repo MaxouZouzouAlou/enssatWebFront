@@ -17,7 +17,9 @@ function Header({
   cartItems = [],
   isAuthenticated = false,
   isProfessional = false,
+  removeFromCart = () => {},
   onSignOut = () => {},
+  updateQuantity = () => {},
 }) {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -39,7 +41,12 @@ function Header({
     if (name === 'cart') {
       return (
         <HeaderPopover title="Votre panier" mobile={mobile}>
-          <CartPreview items={cartItems} onClose={close} />
+          <CartPreview
+            items={cartItems}
+            onClose={close}
+            removeItem={removeFromCart}
+            updateQuantity={updateQuantity}
+          />
         </HeaderPopover>
       );
     }
