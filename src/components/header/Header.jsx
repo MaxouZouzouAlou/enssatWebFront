@@ -1,51 +1,199 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router';
+import { ReactComponent as Logo } from '../../assets/logo.svg';
+import { PrimaryButton } from '../Button.jsx';
+import IconButton from '../IconButton.jsx';
+import AccountMenu from './AccountMenu.jsx';
+import CartPreview from './CartPreview.jsx';
+import HeaderPopover from './HeaderPopover.jsx';
+import NavTabs from './NavTabs.jsx';
+import NotificationsMenu from './NotificationsMenu.jsx';
 
-function Header({ cartCount = 0, onAccountClick = () => {}, onCartClick = () => {} }) {
+const NAV_ICON_CLASS = 'text-secondary-500 hover:text-primary-600 hover:bg-primary-50';
+const ACTIVE_NAV_ICON_CLASS = 'bg-primary-100 text-primary-700';
+
+function Header({
+  cartCount = 0,
+  cartItems = [],
+  isAuthenticated = false,
+  isProfessional = false,
+  onSignOut = () => {},
+}) {
+  const navigate = useNavigate();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [activePopover, setActivePopover] = useState(null);
+  const headerRef = useRef(null);
+
+  const close = () => {
+    setMenuOpen(false);
+    setActivePopover(null);
+  };
+
+  const togglePopover = (name) => {
+    setActivePopover((current) => (current === name ? null : name));
+  };
+
+  const getActionIconClass = (name) => `${NAV_ICON_CLASS} ${activePopover === name ? ACTIVE_NAV_ICON_CLASS : ''}`;
+
+  const renderActionContent = (name, mobile = false) => {
+    if (name === 'cart') {
+      return (
+        <HeaderPopover title="Votre panier" mobile={mobile}>
+          <CartPreview items={cartItems} onClose={close} />
+        </HeaderPopover>
+      );
+    }
+
+    if (name === 'notifications') {
+      return (
+        <HeaderPopover title="Notifications" mobile={mobile}>
+          <NotificationsMenu isAuthenticated={isAuthenticated} />
+        </HeaderPopover>
+      );
+    }
+
+    if (name === 'account') {
+      return (
+        <HeaderPopover title={isAuthenticated ? 'Mon espace' : 'Compte'} mobile={mobile}>
+          <AccountMenu
+            isAuthenticated={isAuthenticated}
+            isProfessional={isProfessional}
+            onClose={close}
+            onSignOut={onSignOut}
+          />
+        </HeaderPopover>
+      );
+    }
+
+    return null;
+  };
+
+  const renderHeaderActions = ({ mobile = false } = {}) => (
+    <>
+      {mobile && (
+        <IconButton
+          active={activePopover === null}
+          icon="apps"
+          label="Menu"
+          onClick={() => setActivePopover(null)}
+          className={`${NAV_ICON_CLASS} ${activePopover === null ? ACTIVE_NAV_ICON_CLASS : ''}`}
+        />
+      )}
+      <IconButton
+        active={activePopover === 'cart'}
+        icon="shopping_cart"
+        label="Ouvrir le panier"
+        badge={cartCount}
+        onClick={() => togglePopover('cart')}
+        className={getActionIconClass('cart')}
+      />
+      <IconButton
+        active={activePopover === 'notifications'}
+        icon="notifications"
+        label="Notifications"
+        onClick={() => togglePopover('notifications')}
+        className={getActionIconClass('notifications')}
+      />
+      <IconButton
+        active={activePopover === 'account'}
+        icon="person"
+        label="Mon compte"
+        onClick={() => togglePopover('account')}
+        className={getActionIconClass('account')}
+      />
+    </>
+  );
+
+  useEffect(() => {
+    if (!activePopover && !menuOpen) return undefined;
+
+    const handlePointerDown = (event) => {
+      if (headerRef.current?.contains(event.target)) return;
+      close();
+    };
+
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') close();
+    };
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [activePopover, menuOpen]);
+
   return (
-    <header className="w-full bg-gradient-to-r from-emerald-100 via-white to-emerald-100 shadow-md">
-      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 flex items-center justify-center bg-emerald-200 text-emerald-800 rounded-full shadow-sm">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2C12 2 7 6 7 11C7 16 11 20 11 20" stroke="#065f46" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M12 2C12 2 17 6 17 11C17 16 13 20 13 20" stroke="#10b981" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </div>
-          <div>
-            <div className="text-lg font-bold text-emerald-800">Marché local</div>
-            <div className="text-xs text-emerald-600">Produits frais et de saison</div>
+    <header ref={headerRef} className="sticky top-0 z-40 px-4 py-3">
+      {/* Main bar */}
+      <div className="mx-auto flex max-w-6xl items-center justify-between rounded-2xl border border-neutral-200 bg-neutral-50/85 px-4 py-2.5 shadow-[0_18px_45px_rgba(29,52,34,.12)] backdrop-blur-md">
+
+        {/* Left — logo + name */}
+        <button
+          onClick={() => navigate('/')}
+          className="flex items-center gap-2.5 hover:opacity-80 transition"
+        >
+          <Logo className="h-5 w-auto text-primary-600 md:h-7" />
+          <span className="text-sm font-bold text-primary-700 md:text-lg" style={{ fontFamily: 'var(--font-title)' }}>
+            Local'zh
+          </span>
+        </button>
+
+        {/* Right — desktop */}
+        <div className="hidden md:flex items-center gap-3">
+          <NavTabs isProfessional={isProfessional} />
+
+          {/* Se connecter (non connecté uniquement) */}
+          {!isAuthenticated && (
+            <PrimaryButton onClick={() => navigate('/login')} className="h-9">
+              Se connecter
+            </PrimaryButton>
+          )}
+
+          {/* Icons — ordre : panier, notif, compte */}
+          <div className="relative flex items-center gap-0.5">
+            {renderHeaderActions({ mobile: false })}
+            {activePopover ? renderActionContent(activePopover) : null}
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onAccountClick}
-            className="flex items-center gap-2 px-3 py-1.5 bg-white border border-emerald-200 rounded-md text-emerald-700 hover:bg-emerald-50 transition">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M20 21V19C20 17.8954 19.1046 17 18 17H6C4.89543 17 4 17.8954 4 19V21" stroke="#065f46" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z" stroke="#065f46" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <span className="text-sm">Compte</span>
-          </button>
-
-          <button
-            onClick={onCartClick}
-            className="relative flex items-center gap-2 px-3 py-1.5 bg-emerald-600 text-white rounded-md hover:bg-emerald-700 transition">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M6 6H21L20 14H8L6 6Z" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M6 6L4 2H2" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M9 20C9.55228 20 10 19.5523 10 19C10 18.4477 9.55228 18 9 18C8.44772 18 8 18.4477 8 19C8 19.5523 8.44772 20 9 20Z" fill="white" />
-              <path d="M18 20C18.5523 20 19 19.5523 19 19C19 18.4477 18.5523 18 18 18C17.4477 18 17 18.4477 17 19C17 19.5523 17.4477 20 18 20Z" fill="white" />
-            </svg>
-            <span className="text-sm">Panier</span>
-            <span className="sr-only">Articles dans le panier</span>
-
-            <span className="absolute -top-2 -right-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-semibold leading-none text-emerald-800 bg-white rounded-full border border-emerald-200">
-              {cartCount}
-            </span>
-          </button>
-        </div>
+        {/* Right — mobile burger */}
+        <IconButton
+          icon={menuOpen ? 'close' : 'menu'}
+          label={menuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+          onClick={() => {
+            setMenuOpen(o => !o);
+            setActivePopover(null);
+          }}
+          className={`md:hidden ${NAV_ICON_CLASS}`}
+        />
       </div>
+
+      {/* Mobile dropdown */}
+      {menuOpen && (
+        <div className="mx-auto mt-3 flex max-w-6xl flex-col rounded-2xl border border-neutral-200 bg-neutral-50/95 px-4 py-3 shadow-[0_24px_70px_rgba(29,52,34,.18)] backdrop-blur-md md:hidden">
+          <div className="flex items-center justify-end gap-1">
+            {renderHeaderActions({ mobile: true })}
+          </div>
+
+          <div key={activePopover || 'navigation'} className="animate-header-popover pt-3">
+            {activePopover ? (
+              renderActionContent(activePopover, true)
+            ) : (
+              <div className="flex flex-col items-center gap-3 border-t border-neutral-200 pt-3">
+                <NavTabs className="justify-center" isProfessional={isProfessional} onNavigate={close} />
+                {!isAuthenticated ? (
+                  <PrimaryButton onClick={() => { navigate('/login'); close(); }} className="w-full">
+                    Se connecter
+                  </PrimaryButton>
+                ) : null}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </header>
   );
 }

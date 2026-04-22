@@ -28,9 +28,11 @@ Thumbs.db
 # Local AI/agent setup
 AGENTS.md
 PLANS.md
+PLANS.md
 agents/
 .agents/
 .codex
 .codex/
+codex/rules/
 codex/rules/
 *.toml

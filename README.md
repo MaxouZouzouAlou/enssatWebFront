@@ -89,6 +89,22 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 
 In the project directory, you can run:
 
+### Auth configuration
+
+The frontend calls the backend auth API with credentials enabled. By default,
+the frontend runs on `http://localhost:3000` and calls the backend on
+`http://localhost:49161`:
+
+```bash
+PORT=3000
+REACT_APP_API_URL=http://localhost:49161
+```
+
+Email/password registration redirects users through email verification before
+login. Professional registration collects the company address
+(`adresse_ligne`, `code_postal`, `ville`); the user personal address is not
+collected during account creation.
+
 ### `npm start`
 
 Runs the app in the development mode.\

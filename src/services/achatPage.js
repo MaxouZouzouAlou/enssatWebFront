@@ -1,12 +1,31 @@
+import { API_BASE_URL } from './auth-client.js';
+
 async function getListProducts() {
-	const response = await fetch('http://localhost:49161/products/', {
-		method: 'GET'
+	const response = await fetch(`${API_BASE_URL}/products/`, {
+		method: 'GET',
+		credentials: 'include',
 	});
 	if (!response.ok) {
 		throw new Error('Failed to fetch products');
 	}
-	const products = await response.json();
-	return products;
+	return response.json();
 }
 
-export default { getListProducts };
+async function addProductToShoppingCart(idProduit) {
+	const response = await fetch(`${API_BASE_URL}/shoppingCart/item`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		credentials: 'include',
+		body: JSON.stringify({ idPanier: 6, idProduit }),
+	});
+	if (!response.ok) {
+		throw new Error('Failed to add product to shopping cart');
+	}
+	return response.json();
+}
+
+const achatService = { getListProducts, addProductToShoppingCart };
+
+export default achatService;
