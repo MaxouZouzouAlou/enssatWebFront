@@ -38,8 +38,6 @@ function Achat({ addToCart = () => {} }) {
 			</div>
 		);
 
-	console.log('Produits chargés:', products);
-
 	return (
 		<div className="min-h-screen bg-gradient-to-b from-green-50 via-white to-green-50 py-8">
 			<div className="max-w-6xl mx-auto px-4">

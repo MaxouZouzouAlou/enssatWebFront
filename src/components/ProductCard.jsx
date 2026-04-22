@@ -1,5 +1,5 @@
 import React from 'react';
-import achatService from '../services/achatPage';
+import shoppingCart from '../services/shoppingCart';
 
 export default function ProductCard({ product, onAdd = () => {} }) {
   const id = product.idProduit ?? product.id ?? product._id;
@@ -42,7 +42,7 @@ export default function ProductCard({ product, onAdd = () => {} }) {
           onClick={async () => {
             const id = product.idProduit ?? product.id ?? product._id;
             try {
-              await achatService.addProductToShoppingCart(id);
+              await shoppingCart.addProductToShoppingCart(id);
             } catch (err) {
               console.error('Failed to add product to shopping cart', err);
             }
