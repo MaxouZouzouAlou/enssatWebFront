@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react';
-import App from './App';
+import App from './App.jsx';
 
 jest.mock('../services/auth-client', () => ({
   authClient: {
@@ -16,5 +16,5 @@ jest.mock('../services/auth-client', () => ({
 test('renders app root', () => {
   const { getByText } = render(<App />);
 
-  expect(getByText('Acceder a votre compte')).toBeInTheDocument();
+  expect(getByText('Marketplace locale en Bretagne')).toBeInTheDocument();
 });
