@@ -5,15 +5,17 @@ export default function useCart(initial = []) {
 	const [cartItems, setCartItems] = useState(initial);
 	const [cartOpen, setCartOpen] = useState(false);
 
-	const addToCart = (product) => {
+	const addToCart = (product, quantite = 1) => {
+		const qty = Number(quantite) || 0;
+		if (qty <= 0) return;
 		setCartItems(prev => {
 			const matchIndex = prev.findIndex(item => (item.product.idProduit && product.idProduit && item.product.idProduit === product.idProduit) || (item.product.id && product.id && item.product.id === product.id) || (item.product._id && product._id && item.product._id === product._id));
 			if (matchIndex !== -1) {
 				const copy = [...prev];
-				copy[matchIndex] = { ...copy[matchIndex], quantity: copy[matchIndex].quantity + 1 };
+				copy[matchIndex] = { ...copy[matchIndex], quantity: copy[matchIndex].quantity + qty };
 				return copy;
 			}
-			return [...prev, { product, quantity: 1 }];
+			return [...prev, { product, quantity: qty }];
 		});
 	};
 
@@ -57,6 +59,7 @@ export default function useCart(initial = []) {
 							stock: it.stock,
 							bio: it.bio,
 							visible: it.visible,
+							unitaireOuKilo: it.unitaireOuKilo,
 							tva: it.tva,
 							reductionProfessionnel: it.reductionProfessionnel,
 							idProfessionnel: it.idProfessionnel,
@@ -74,6 +77,7 @@ export default function useCart(initial = []) {
 							stock: data.stock,
 							bio: data.bio,
 							visible: data.visible,
+							unitaireOuKilo: data.unitaireOuKilo,
 							tva: data.tva,
 							reductionProfessionnel: data.reductionProfessionnel,
 							idProfessionnel: data.idProfessionnel,

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import shoppingCart from '../services/shoppingCart';
 
 export default function ProductCard({ product, onAdd = () => {} }) {
@@ -38,21 +38,56 @@ export default function ProductCard({ product, onAdd = () => {} }) {
 
       <div className="mt-4 flex items-center justify-between">
         <p className="text-sm text-gray-600">Stock: <span className="font-medium text-gray-800">{stock ?? '—'}</span></p>
-        <button
-          onClick={async () => {
-            const id = product.idProduit ?? product.id ?? product._id;
-            try {
-              await shoppingCart.addProductToShoppingCart(id);
-            } catch (err) {
-              console.error('Failed to add product to shopping cart', err);
-            }
-            onAdd(product);
-          }}
-          className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition text-sm"
-        >
-          Ajouter
-        </button>
+        {product.unitaireOuKilo === 1 || product.unitaireOuKilo === true ? (
+          <button
+            onClick={async () => {
+              const id = product.idProduit ?? product.id ?? product._id;
+              try {
+                await shoppingCart.addProductToShoppingCart(6, id, 1);
+              } catch (err) {
+                console.error('Failed to add product to shopping cart', err);
+              }
+              onAdd(product, 1);
+            }}
+            className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition text-sm"
+          >
+            Ajouter
+          </button>
+        ) : (
+          <KiloAdd product={product} onAdd={onAdd} />
+        )}
       </div>
     </article>
+  );
+}
+
+function KiloAdd({ product, onAdd }) {
+  const [qty, setQty] = useState('0.1');
+  const id = product.idProduit ?? product.id ?? product._id;
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        type="number"
+        min="0.1"
+        step="0.1"
+        value={qty}
+        onChange={(e) => setQty(e.target.value)}
+        className="w-20 border rounded px-2 py-1 text-sm"
+      />
+      <button
+        onClick={async () => {
+          const q = parseFloat(qty) || 0.1;
+          try {
+            await shoppingCart.addProductToShoppingCart(6, id, q);
+          } catch (err) {
+            console.error('Failed to add product to shopping cart', err);
+          }
+          onAdd(product, q);
+        }}
+        className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition text-sm"
+      >
+        Ajouter
+      </button>
+    </div>
   );
 }

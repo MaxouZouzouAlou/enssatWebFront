@@ -23,14 +23,14 @@ async function getShoppingCartItems(idPanier) {
     }
 }
 
-async function addProductToShoppingCart(idPanier, idProduit) {
-	const response = await fetch('http://localhost:49161/shoppingCart/item', {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json'
-		},
-		body: JSON.stringify({ idPanier: 6, idProduit: idProduit })
-	});
+async function addProductToShoppingCart(idPanier, idProduit, quantite = 1) {
+    const response = await fetch('http://localhost:49161/shoppingCart/item', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ idPanier: idPanier, idProduit: idProduit, quantite: quantite })
+    });
 
 	if (!response.ok) {
 		const errText = await response.text().catch(() => '');
@@ -49,13 +49,13 @@ async function addProductToShoppingCart(idPanier, idProduit) {
 	}
 }
 
-async function removeProductFromShoppingCart(idPanier, idProduit) {
+async function removeProductFromShoppingCart(idPanier, idProduit, quantite = 1) {
     const response = await fetch('http://localhost:49161/shoppingCart/single', {
         method: 'DELETE',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ idPanier: 6, idProduit: idProduit })
+        body: JSON.stringify({ idPanier: idPanier, idProduit: idProduit, quantite: quantite })
     });
 
     if (!response.ok) {
@@ -81,7 +81,7 @@ async function removerProductsFromShoppingCart(idPanier, idProduit) {
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ idPanier: 6, idProduit: idProduit })
+        body: JSON.stringify({ idPanier: idPanier, idProduit: idProduit })
     });
 
     if (!response.ok) {

@@ -26,7 +26,7 @@ function App() {
 
 				<Routes>
 					<Route path="/" element={<Achat addToCart={addToCart} />} />
-					<Route path="/panier" element={<Panier items={cartItems} />} />
+					  <Route path="/panier" element={<Panier items={cartItems} removeItem={removeFromCart} updateQuantity={updateQuantity} />} />
 				</Routes>
 
 				{cartOpen && (
