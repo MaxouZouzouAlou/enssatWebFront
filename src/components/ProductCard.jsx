@@ -1,6 +1,6 @@
 import React from 'react';
 import achatService from '../services/achatPage';
-import { SurfaceCard } from './layout';
+import SurfaceCard from './layout/SurfaceCard.jsx';
 
 export default function ProductCard({ product, onAdd = () => {} }) {
   const id = product.idProduit ?? product.id ?? product._id;

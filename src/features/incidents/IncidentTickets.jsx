@@ -1,4 +1,5 @@
-import { PageShell, SectionHeader } from '../../components/layout';
+import PageShell from '../../components/layout/PageShell.jsx';
+import SectionHeader from '../../components/layout/SectionHeader.jsx';
 import IncidentAlert from './IncidentAlert.jsx';
 import IncidentDetail from './IncidentDetail.jsx';
 import IncidentForm from './IncidentForm.jsx';

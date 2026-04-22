@@ -1,4 +1,5 @@
 import React from 'react';
+import SurfaceCard from './layout/SurfaceCard.jsx';
 import ProductCard from './ProductCard';
 
 export default function ProductGrid({ products = [], addToCart = () => {} }) {
@@ -13,7 +14,7 @@ export default function ProductGrid({ products = [], addToCart = () => {} }) {
           <ProductCard key={p.idProduit ?? p.id ?? p._id ?? idx} product={p} onAdd={addToCart} />
         ))
       ) : (
-        <div className="col-span-full rounded-2xl bg-neutral-50 py-10 text-center text-neutral-600 shadow-[0_16px_40px_rgba(29,52,34,.10)]">Aucun produit trouvé.</div>
+        <SurfaceCard className="col-span-full py-10 text-center text-neutral-600">Aucun produit trouvé.</SurfaceCard>
       )}
     </div>
   );

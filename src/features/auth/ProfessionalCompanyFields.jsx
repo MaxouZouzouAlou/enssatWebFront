@@ -1,8 +1,9 @@
 import FormField from '../../components/FormField.jsx';
+import SoftPanel from '../../components/layout/SoftPanel.jsx';
 
 export default function ProfessionalCompanyFields({ entreprise, fieldErrors, onChange }) {
 	return (
-		<div className="rounded-md border border-neutral-300 bg-neutral-100 p-4">
+			<SoftPanel>
 			<h3 className="text-sm font-semibold text-secondary-900">Entreprise</h3>
 			<div className="mt-4 grid gap-4 sm:grid-cols-2">
 				<FormField
@@ -53,6 +54,6 @@ export default function ProfessionalCompanyFields({ entreprise, fieldErrors, onC
 					value={entreprise.ville}
 				/>
 			</div>
-		</div>
-	);
+			</SoftPanel>
+		);
 }

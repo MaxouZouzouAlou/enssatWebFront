@@ -170,7 +170,6 @@ h6 {
 
 .material-symbols-rounded {
   direction: ltr;
-  display: inline-block;
   font-family: var(--font-icon);
   font-feature-settings: 'liga';
   font-size: 1.25em;

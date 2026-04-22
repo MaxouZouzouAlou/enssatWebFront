@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
-import { SectionHeader, SurfaceCard } from '../../components/layout';
+import SectionHeader from '../../components/layout/SectionHeader.jsx';
+import SurfaceCard from '../../components/layout/SurfaceCard.jsx';
 import { collections } from './homeData';
 
 export default function CollectionGrid() {

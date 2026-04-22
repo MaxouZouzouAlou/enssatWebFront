@@ -1,4 +1,5 @@
-import { SectionHeader, SurfaceCard } from '../../components/layout';
+import SectionHeader from '../../components/layout/SectionHeader.jsx';
+import SurfaceCard from '../../components/layout/SurfaceCard.jsx';
 import { customerSteps } from './homeData';
 
 export default function CustomerJourney() {

@@ -1,4 +1,5 @@
-import { SurfaceCard } from '../../components/layout';
+import DataTable from '../../components/DataTable.jsx';
+import SurfaceCard from '../../components/layout/SurfaceCard.jsx';
 import { severityLabel, severityOptions, severityStyles, statusLabel, statusOptions } from './incidentsData';
 
 export default function IncidentTable({
@@ -9,6 +10,36 @@ export default function IncidentTable({
 	severityFilter,
 	statusFilter,
 }) {
+	const columns = [
+		{ key: 'id', header: 'Ticket', render: (ticket) => <span className="font-semibold">#{ticket.id}</span> },
+		{ key: 'title', header: 'Titre' },
+		{
+			key: 'severity',
+			header: 'Severite',
+			render: (ticket) => (
+				<span className={`rounded-full border px-2 py-1 text-xs font-semibold ${severityStyles[ticket.severity]}`}>
+					{severityLabel[ticket.severity] || ticket.severity}
+				</span>
+			)
+		},
+		{ key: 'status', header: 'Statut', render: (ticket) => statusLabel[ticket.status] || ticket.status },
+		{ key: 'moduleConcerne', header: 'Module' },
+		{ key: 'responseCount', header: 'Reponses' },
+		{
+			key: 'action',
+			header: 'Action',
+			render: (ticket) => (
+				<button
+					type="button"
+					onClick={() => onOpenTicket(ticket.id)}
+					className="rounded-xl bg-neutral-100 px-2.5 py-1.5 text-xs font-semibold hover:bg-primary-50"
+				>
+					Voir
+				</button>
+			)
+		},
+	];
+
 	return (
 		<SurfaceCard as="section" className="col-span-12 p-4 xl:col-span-8">
 			<div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -37,52 +68,7 @@ export default function IncidentTable({
 				</div>
 			</div>
 
-			<div className="overflow-x-auto">
-				<table className="w-full border-collapse">
-					<thead>
-						<tr>
-							{['Ticket', 'Titre', 'Severite', 'Statut', 'Module', 'Reponses', 'Action'].map((head) => (
-								<th
-									key={head}
-									className="border-b border-neutral-300 px-2 py-2 text-left text-xs font-semibold uppercase tracking-wide text-neutral-600"
-								>
-									{head}
-								</th>
-							))}
-						</tr>
-					</thead>
-					<tbody>
-						{filteredTickets.map((ticket) => (
-							<tr key={ticket.id}>
-								<td className="border-b border-neutral-200 px-2 py-3 text-sm font-semibold">#{ticket.id}</td>
-								<td className="border-b border-neutral-200 px-2 py-3 text-sm">{ticket.title}</td>
-								<td className="border-b border-neutral-200 px-2 py-3 text-sm">
-									<span
-										className={`rounded-full border px-2 py-1 text-xs font-semibold ${severityStyles[ticket.severity]}`}
-									>
-										{severityLabel[ticket.severity] || ticket.severity}
-									</span>
-								</td>
-								<td className="border-b border-neutral-200 px-2 py-3 text-sm">{statusLabel[ticket.status] || ticket.status}</td>
-								<td className="border-b border-neutral-200 px-2 py-3 text-sm">{ticket.moduleConcerne}</td>
-								<td className="border-b border-neutral-200 px-2 py-3 text-sm">{ticket.responseCount}</td>
-								<td className="border-b border-neutral-200 px-2 py-3 text-sm">
-									<button
-										type="button"
-										onClick={() => onOpenTicket(ticket.id)}
-										className="rounded-xl bg-neutral-100 px-2.5 py-1.5 text-xs font-semibold hover:bg-primary-50"
-									>
-										Voir
-									</button>
-								</td>
-							</tr>
-						))}
-					</tbody>
-				</table>
-				{filteredTickets.length === 0 ? (
-					<p className="py-8 text-center text-sm text-neutral-600">Aucun ticket a afficher.</p>
-				) : null}
-			</div>
+			<DataTable columns={columns} emptyLabel="Aucun ticket a afficher." getRowKey={(ticket) => ticket.id} rows={filteredTickets} />
 		</SurfaceCard>
 	);
 }

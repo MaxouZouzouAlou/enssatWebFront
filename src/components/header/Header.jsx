@@ -10,6 +10,7 @@ import NavTabs from './NavTabs.jsx';
 import NotificationsMenu from './NotificationsMenu.jsx';
 
 const NAV_ICON_CLASS = 'text-secondary-500 hover:text-primary-600 hover:bg-primary-50';
+const ACTIVE_NAV_ICON_CLASS = 'bg-primary-100 text-primary-700';
 
 function Header({
   cartCount = 0,
@@ -31,6 +32,77 @@ function Header({
   const togglePopover = (name) => {
     setActivePopover((current) => (current === name ? null : name));
   };
+
+  const getActionIconClass = (name) => `${NAV_ICON_CLASS} ${activePopover === name ? ACTIVE_NAV_ICON_CLASS : ''}`;
+
+  const renderActionContent = (name, mobile = false) => {
+    if (name === 'cart') {
+      return (
+        <HeaderPopover title="Votre panier" mobile={mobile}>
+          <CartPreview items={cartItems} onClose={close} />
+        </HeaderPopover>
+      );
+    }
+
+    if (name === 'notifications') {
+      return (
+        <HeaderPopover title="Notifications" mobile={mobile}>
+          <NotificationsMenu isAuthenticated={isAuthenticated} />
+        </HeaderPopover>
+      );
+    }
+
+    if (name === 'account') {
+      return (
+        <HeaderPopover title={isAuthenticated ? 'Mon espace' : 'Compte'} mobile={mobile}>
+          <AccountMenu
+            isAuthenticated={isAuthenticated}
+            isProfessional={isProfessional}
+            onClose={close}
+            onSignOut={onSignOut}
+          />
+        </HeaderPopover>
+      );
+    }
+
+    return null;
+  };
+
+  const renderHeaderActions = ({ mobile = false } = {}) => (
+    <>
+      {mobile && (
+        <IconButton
+          active={activePopover === null}
+          icon="apps"
+          label="Menu"
+          onClick={() => setActivePopover(null)}
+          className={`${NAV_ICON_CLASS} ${activePopover === null ? ACTIVE_NAV_ICON_CLASS : ''}`}
+        />
+      )}
+      <IconButton
+        active={activePopover === 'cart'}
+        icon="shopping_cart"
+        label="Ouvrir le panier"
+        badge={cartCount}
+        onClick={() => togglePopover('cart')}
+        className={getActionIconClass('cart')}
+      />
+      <IconButton
+        active={activePopover === 'notifications'}
+        icon="notifications"
+        label="Notifications"
+        onClick={() => togglePopover('notifications')}
+        className={getActionIconClass('notifications')}
+      />
+      <IconButton
+        active={activePopover === 'account'}
+        icon="person"
+        label="Mon compte"
+        onClick={() => togglePopover('account')}
+        className={getActionIconClass('account')}
+      />
+    </>
+  );
 
   useEffect(() => {
     if (!activePopover && !menuOpen) return undefined;
@@ -54,7 +126,7 @@ function Header({
   }, [activePopover, menuOpen]);
 
   return (
-    <header ref={headerRef} className="sticky top-0 z-40 bg-neutral-100/90 px-4 py-3 backdrop-blur-xl">
+    <header ref={headerRef} className="sticky top-0 z-40 px-4 py-3">
       {/* Main bar */}
       <div className="mx-auto flex max-w-6xl items-center justify-between rounded-2xl border border-neutral-200 bg-neutral-50/85 px-4 py-2.5 shadow-[0_18px_45px_rgba(29,52,34,.12)] backdrop-blur-md">
 
@@ -82,29 +154,8 @@ function Header({
 
           {/* Icons — ordre : panier, notif, compte */}
           <div className="relative flex items-center gap-0.5">
-            <IconButton icon="shopping_cart" label="Ouvrir le panier" badge={cartCount} onClick={() => togglePopover('cart')} className={NAV_ICON_CLASS} />
-            <IconButton icon="notifications" label="Notifications" onClick={() => togglePopover('notifications')} className={NAV_ICON_CLASS} />
-            <IconButton icon="person" label="Mon compte" onClick={() => togglePopover('account')} className={NAV_ICON_CLASS} />
-            {activePopover === 'cart' ? (
-              <HeaderPopover title="Votre panier">
-                <CartPreview items={cartItems} onClose={close} />
-              </HeaderPopover>
-            ) : null}
-            {activePopover === 'notifications' ? (
-              <HeaderPopover title="Notifications">
-                <NotificationsMenu isAuthenticated={isAuthenticated} />
-              </HeaderPopover>
-            ) : null}
-            {activePopover === 'account' ? (
-              <HeaderPopover title={isAuthenticated ? 'Mon espace' : 'Compte'}>
-                <AccountMenu
-                  isAuthenticated={isAuthenticated}
-                  isProfessional={isProfessional}
-                  onClose={close}
-                  onSignOut={onSignOut}
-                />
-              </HeaderPopover>
-            ) : null}
+            {renderHeaderActions({ mobile: false })}
+            {activePopover ? renderActionContent(activePopover) : null}
           </div>
         </div>
 
@@ -122,41 +173,25 @@ function Header({
 
       {/* Mobile dropdown */}
       {menuOpen && (
-        <div className="mx-auto mt-2 flex max-w-6xl flex-col gap-1 rounded-2xl border border-neutral-200 bg-neutral-50/95 px-4 py-3 shadow-lg backdrop-blur-md md:hidden">
-          <NavTabs isProfessional={isProfessional} onNavigate={close} />
-
-          {!isAuthenticated && (
-            <PrimaryButton onClick={() => { navigate('/login'); close(); }} className="mt-1 w-full">
-              Se connecter
-            </PrimaryButton>
-          )}
-
-          <div className="flex items-center gap-1 pt-2 mt-1 border-t border-neutral-200">
-            <IconButton icon="shopping_cart" label="Ouvrir le panier" badge={cartCount} onClick={() => togglePopover('cart')} className={NAV_ICON_CLASS} />
-            <IconButton icon="notifications" label="Notifications" onClick={() => togglePopover('notifications')} className={NAV_ICON_CLASS} />
-            <IconButton icon="person" label="Mon compte" onClick={() => togglePopover('account')} className={NAV_ICON_CLASS} />
+        <div className="mx-auto mt-3 flex max-w-6xl flex-col rounded-2xl border border-neutral-200 bg-neutral-50/95 px-4 py-3 shadow-[0_24px_70px_rgba(29,52,34,.18)] backdrop-blur-md md:hidden">
+          <div className="flex items-center justify-end gap-1">
+            {renderHeaderActions({ mobile: true })}
           </div>
 
-          {activePopover === 'cart' ? (
-            <HeaderPopover title="Votre panier" mobile>
-              <CartPreview items={cartItems} onClose={close} />
-            </HeaderPopover>
-          ) : null}
-          {activePopover === 'notifications' ? (
-            <HeaderPopover title="Notifications" mobile>
-              <NotificationsMenu isAuthenticated={isAuthenticated} />
-            </HeaderPopover>
-          ) : null}
-          {activePopover === 'account' ? (
-            <HeaderPopover title={isAuthenticated ? 'Mon espace' : 'Compte'} mobile>
-              <AccountMenu
-                isAuthenticated={isAuthenticated}
-                isProfessional={isProfessional}
-                onClose={close}
-                onSignOut={onSignOut}
-              />
-            </HeaderPopover>
-          ) : null}
+          <div key={activePopover || 'navigation'} className="animate-header-popover pt-3">
+            {activePopover ? (
+              renderActionContent(activePopover, true)
+            ) : (
+              <div className="flex flex-col items-center gap-3 border-t border-neutral-200 pt-3">
+                <NavTabs className="justify-center" isProfessional={isProfessional} onNavigate={close} />
+                {!isAuthenticated ? (
+                  <PrimaryButton onClick={() => { navigate('/login'); close(); }} className="w-full">
+                    Se connecter
+                  </PrimaryButton>
+                ) : null}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </header>

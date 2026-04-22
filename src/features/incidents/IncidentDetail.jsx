@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
-import { SurfaceCard } from '../../components/layout';
+import { ActionButton } from '../../components/Button.jsx';
+import FormField from '../../components/FormField.jsx';
+import SoftPanel from '../../components/layout/SoftPanel.jsx';
+import SurfaceCard from '../../components/layout/SurfaceCard.jsx';
 import { statusLabel, statusOptions } from './incidentsData';
 
 export default function IncidentDetail({
@@ -52,7 +55,7 @@ export default function IncidentDetail({
 
 	return (
 		<SurfaceCard as="section" className="col-span-12 p-4">
-			<div className="flex flex-col gap-3 rounded-2xl bg-neutral-100 p-4 md:flex-row md:items-start md:justify-between">
+			<SoftPanel className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
 				<div>
 					<p className="text-xs font-bold uppercase tracking-[0.12em] text-primary-600">Ticket #{ticket.id}</p>
 					<h2 className="mt-1 text-2xl font-bold">{ticket.title}</h2>
@@ -63,17 +66,17 @@ export default function IncidentDetail({
 					<p><span className="font-semibold text-secondary-800">Module :</span> {ticket.moduleConcerne}</p>
 					<p><span className="font-semibold text-secondary-800">Createur :</span> {formatUser(ticket.creator)}</p>
 				</div>
-			</div>
+			</SoftPanel>
 
 			<div className="mt-4 grid gap-4 lg:grid-cols-2">
 				<div>
 					<h3 className="text-lg font-semibold">Reponses super admin</h3>
 					<div className="mt-3 space-y-3">
 						{detail.responses.length ? detail.responses.map((response) => (
-							<article key={response.id} className="rounded-xl bg-neutral-100 p-3">
+							<SoftPanel as="article" key={response.id} className="rounded-xl p-3">
 								<p className="text-xs font-semibold text-primary-600">{formatUser(response.author)}</p>
 								<p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-secondary-800">{response.message}</p>
-							</article>
+							</SoftPanel>
 						)) : (
 							<p className="text-sm text-neutral-600">Aucune reponse pour le moment.</p>
 						)}
@@ -81,23 +84,22 @@ export default function IncidentDetail({
 
 					{permissions.canReply ? (
 						<form className="mt-4 space-y-3" onSubmit={submitReply}>
-							<label className="block text-sm font-medium" htmlFor="incident-reply">Repondre</label>
-							<textarea
-								id="incident-reply"
+							<FormField
+								as="textarea"
+								label="Repondre"
 								minLength={1}
+								name="incident-reply"
 								onChange={(event) => setMessage(event.target.value)}
 								required
 								rows={4}
 								value={message}
-								className="w-full resize-y rounded-xl bg-neutral-100 px-3 py-2 outline-none ring-primary-500/20 focus:ring"
 							/>
-							<button
+							<ActionButton
 								type="submit"
 								disabled={mutationLoading}
-								className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-neutral-400"
 							>
 								{mutationLoading ? 'Envoi...' : 'Envoyer la reponse'}
-							</button>
+							</ActionButton>
 						</form>
 					) : null}
 				</div>
@@ -106,44 +108,45 @@ export default function IncidentDetail({
 					<h3 className="text-lg font-semibold">Historique</h3>
 					<div className="mt-3 space-y-3">
 						{detail.history.map((event) => (
-							<article key={event.id} className="rounded-xl bg-neutral-100 p-3 text-sm">
+							<SoftPanel as="article" key={event.id} className="rounded-xl p-3 text-sm">
 								<p className="font-semibold text-secondary-800">
 									{event.previousStatus ? `${statusLabel[event.previousStatus]} -> ` : ''}
 									{statusLabel[event.nextStatus] || event.nextStatus}
 								</p>
 								<p className="mt-1 text-neutral-600">{formatUser(event.actor)}</p>
 								{event.commentaire ? <p className="mt-2 text-neutral-600">{event.commentaire}</p> : null}
-							</article>
+							</SoftPanel>
 						))}
 					</div>
 
 					{permissions.canChangeStatus ? (
 						<form className="mt-4 space-y-3" onSubmit={submitStatus}>
-							<label className="block text-sm font-medium" htmlFor="incident-status">Changer le statut</label>
-							<select
-								id="incident-status"
+							<FormField
+								as="select"
+								label="Changer le statut"
+								name="incident-status"
 								onChange={(event) => setStatus(event.target.value)}
 								value={status}
-								className="w-full rounded-xl bg-neutral-100 px-3 py-2 outline-none ring-primary-500/20 focus:ring"
 							>
 								{statusOptions.map((option) => (
 									<option key={option.value} value={option.value}>{option.label}</option>
 								))}
-							</select>
-							<textarea
+							</FormField>
+							<FormField
+								as="textarea"
+								label="Commentaire"
+								name="incident-commentaire"
 								onChange={(event) => setCommentaire(event.target.value)}
-								placeholder="Commentaire interne visible dans l'historique"
 								rows={3}
 								value={commentaire}
-								className="w-full resize-y rounded-xl bg-neutral-100 px-3 py-2 outline-none ring-primary-500/20 focus:ring"
 							/>
-							<button
+							<ActionButton
 								type="submit"
 								disabled={mutationLoading || status === ticket.status}
-								className="rounded-xl border border-primary-600 px-4 py-2 text-sm font-semibold text-primary-700 disabled:cursor-not-allowed disabled:opacity-50"
+								variant="secondary"
 							>
 								{mutationLoading ? 'Mise a jour...' : 'Mettre a jour'}
-							</button>
+							</ActionButton>
 						</form>
 					) : null}
 				</div>

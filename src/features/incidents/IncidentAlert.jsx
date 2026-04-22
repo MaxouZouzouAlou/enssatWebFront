@@ -1,4 +1,4 @@
-import { SurfaceCard } from '../../components/layout';
+import SurfaceCard from '../../components/layout/SurfaceCard.jsx';
 import { alertLevelClasses } from './incidentsData';
 
 export default function IncidentAlert({ alertBanner }) {

@@ -1,4 +1,4 @@
-import { MetricCard } from '../../components/layout';
+import MetricCard from '../../components/layout/MetricCard.jsx';
 
 export default function IncidentKpis({ kpi }) {
 	return (

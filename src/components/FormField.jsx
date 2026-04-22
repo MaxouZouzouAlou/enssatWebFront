@@ -1,7 +1,9 @@
 import { useId, useState } from 'react';
 
 export default function FormField({
+  as = 'input',
   autoComplete,
+  children,
   error,
   help,
   inputMode,
@@ -12,7 +14,9 @@ export default function FormField({
   onBlur,
   onChange,
   pattern,
+  placeholder,
   required = false,
+  rows,
   toggleVisibility = false,
   type = 'text',
   value,
@@ -24,35 +28,47 @@ export default function FormField({
   const errorId = error ? `${inputId}-error` : undefined;
   const describedBy = [helpId, errorId].filter(Boolean).join(' ') || undefined;
   const isPassword = type === 'password';
+  const FieldComponent = as;
   const inputType = isPassword && toggleVisibility && isVisible ? 'text' : type;
+  const fieldClassName = `w-full rounded-xl bg-neutral-100 px-3 text-sm text-secondary-900 outline-none transition focus:ring-2 disabled:cursor-not-allowed disabled:bg-neutral-200 ${
+    as === 'textarea' ? 'min-h-28 resize-y py-2' : 'h-11'
+  } ${
+    toggleVisibility ? 'pr-11' : ''
+  } ${
+    error
+      ? 'ring-1 ring-red-300 focus:ring-red-100'
+      : 'focus:bg-neutral-50 focus:ring-primary-100'
+  }`;
+
+  const fieldProps = {
+    'aria-describedby': describedBy,
+    'aria-invalid': error ? 'true' : 'false',
+    autoComplete,
+    className: fieldClassName,
+    id: inputId,
+    inputMode,
+    maxLength,
+    minLength,
+    name,
+    onBlur,
+    onChange,
+    pattern,
+    placeholder,
+    required,
+    value,
+  };
 
   return (
     <label className="block" htmlFor={inputId}>
       <span className="mb-2 block text-sm font-medium text-secondary-700">{label}</span>
       <span className="relative block">
-        <input
-          aria-describedby={describedBy}
-          aria-invalid={error ? 'true' : 'false'}
-          autoComplete={autoComplete}
-          className={`h-11 w-full rounded-xl bg-neutral-100 px-3 text-sm text-secondary-900 outline-none transition focus:ring-2 disabled:cursor-not-allowed disabled:bg-neutral-200 ${
-            toggleVisibility ? 'pr-11' : ''
-          } ${
-            error
-              ? 'ring-1 ring-red-300 focus:ring-red-100'
-              : 'focus:bg-neutral-50 focus:ring-primary-100'
-          }`}
-          id={inputId}
-          inputMode={inputMode}
-          maxLength={maxLength}
-          minLength={minLength}
-          name={name}
-          onBlur={onBlur}
-          onChange={onChange}
-          pattern={pattern}
-          required={required}
-          type={inputType}
-          value={value}
-        />
+        {as === 'input' ? (
+          <input {...fieldProps} type={inputType} />
+        ) : (
+          <FieldComponent {...fieldProps} {...(as === 'textarea' ? { rows } : {})}>
+            {children}
+          </FieldComponent>
+        )}
         {isPassword && toggleVisibility ? (
           <button
             aria-label={isVisible ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}

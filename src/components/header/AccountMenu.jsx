@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router';
+import { ActionButton } from '../Button.jsx';
 
 const commonAuthenticatedItems = [
 	{ icon: 'tune', label: 'Paramètres', path: '/compte' },
@@ -21,20 +22,21 @@ export default function AccountMenu({ isAuthenticated, isProfessional, onClose, 
 				<p className="text-sm leading-6 text-neutral-700">
 					Connectez-vous pour accéder à vos commandes, vos favoris et votre suivi de fidélité.
 				</p>
-				<button
+				<ActionButton
 					type="button"
 					onClick={() => goTo('/login')}
-					className="flex h-11 w-full items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 px-4 text-sm font-semibold text-white"
+					className="w-full"
 				>
 					Se connecter
-				</button>
-				<button
+				</ActionButton>
+				<ActionButton
 					type="button"
 					onClick={() => goTo('/register')}
-					className="flex h-11 w-full items-center justify-center rounded-xl bg-neutral-100 px-4 text-sm font-semibold text-secondary-800 hover:bg-neutral-200"
+					className="w-full"
+					variant="secondary"
 				>
 					Créer un compte
-				</button>
+				</ActionButton>
 			</div>
 		);
 	}

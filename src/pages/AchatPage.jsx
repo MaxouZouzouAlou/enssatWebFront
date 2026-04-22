@@ -2,7 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router';
 import achatService from '../services/achatPage';
 import ProductGrid from '../components/ProductGrid';
-import { PageShell, SectionHeader, SurfaceCard } from '../components/layout';
+import PageShell from '../components/layout/PageShell.jsx';
+import SectionHeader from '../components/layout/SectionHeader.jsx';
+import SurfaceCard from '../components/layout/SurfaceCard.jsx';
 
 function AchatPage() {
 	const { addToCart } = useOutletContext();

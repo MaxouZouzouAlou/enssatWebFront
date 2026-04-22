@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from 'react-router';
 
-export default function NavTabs({ isProfessional = false, onNavigate }) {
+export default function NavTabs({ className = '', isProfessional = false, onNavigate }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
 
@@ -17,7 +17,7 @@ export default function NavTabs({ isProfessional = false, onNavigate }) {
   };
 
   return (
-    <nav className="flex items-center gap-1">
+    <nav className={`flex items-center gap-1 ${className}`}>
       {tabs.map(({ label, path }) => (
         <button
           key={path}

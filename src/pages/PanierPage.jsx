@@ -1,7 +1,9 @@
 import React from 'react';
 import { useOutletContext } from 'react-router';
 import CartItem from '../components/header/CartItem';
-import { PageShell, SectionHeader, SurfaceCard } from '../components/layout';
+import PageShell from '../components/layout/PageShell.jsx';
+import SectionHeader from '../components/layout/SectionHeader.jsx';
+import SurfaceCard from '../components/layout/SurfaceCard.jsx';
 
 function PanierPage() {
 	const { cartItems } = useOutletContext();

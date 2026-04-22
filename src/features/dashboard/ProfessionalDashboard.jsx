@@ -13,7 +13,12 @@ import {
 	XAxis,
 	YAxis,
 } from 'recharts';
-import { MetricCard, PageShell, SectionHeader, SurfaceCard } from '../../components/layout';
+import { ActionButton } from '../../components/Button.jsx';
+import DataTable from '../../components/DataTable.jsx';
+import MetricCard from '../../components/layout/MetricCard.jsx';
+import PageShell from '../../components/layout/PageShell.jsx';
+import SectionHeader from '../../components/layout/SectionHeader.jsx';
+import SurfaceCard from '../../components/layout/SurfaceCard.jsx';
 import { fetchProfessionalDashboard } from '../../services/dashboard-client';
 
 const euro = new Intl.NumberFormat('fr-FR', { currency: 'EUR', style: 'currency' });
@@ -95,6 +100,11 @@ export default function ProfessionalDashboard({ accountType = 'particulier', pro
 		['Panier moyen', euro.format(metrics.averageBasket30d || 0), `${number.format(metrics.orders30d || 0)} commande(s)`, 'text-primary-600'],
 		['Taux de rupture', `${Number(metrics.outOfStockRatePct || 0).toFixed(1)}%`, `${number.format(metrics.outOfStockProducts || 0)} produit(s) a surveiller`, 'text-tertiary-500'],
 	];
+	const customerColumns = [
+		{ key: 'customer', header: 'Client' },
+		{ key: 'orders', header: 'Commandes' },
+		{ key: 'revenue', header: 'CA genere', render: (row) => euro.format(row.revenue) },
+	];
 
 	return (
 		<PageShell contentClassName="grid grid-cols-12 gap-5">
@@ -110,9 +120,9 @@ export default function ProfessionalDashboard({ accountType = 'particulier', pro
 					{loading ? <p className="mt-2 text-sm text-neutral-600">Chargement du dashboard...</p> : null}
 					{error ? <p className="mt-2 text-sm font-semibold text-red-700">{error}</p> : null}
 				</SectionHeader>
-				<button className="rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 px-5 py-3 font-semibold text-white shadow-lg" type="button">
+				<ActionButton className="h-12 px-5" type="button">
 					Exporter le rapport
-				</button>
+				</ActionButton>
 			</header>
 
 			<section className="col-span-12 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -185,26 +195,7 @@ export default function ProfessionalDashboard({ accountType = 'particulier', pro
 						<h2 className="text-2xl font-bold">Top clients</h2>
 						<p className="text-sm text-neutral-600">Comptes les plus actifs</p>
 					</div>
-					<div className="overflow-x-auto">
-						<table className="w-full border-collapse">
-							<thead>
-								<tr>
-									<th className="border-b border-neutral-300 px-2 py-3 text-left text-xs font-semibold text-neutral-600">Client</th>
-									<th className="border-b border-neutral-300 px-2 py-3 text-left text-xs font-semibold text-neutral-600">Commandes</th>
-									<th className="border-b border-neutral-300 px-2 py-3 text-left text-xs font-semibold text-neutral-600">CA genere</th>
-								</tr>
-							</thead>
-							<tbody>
-								{topCustomers.map((row) => (
-									<tr key={row.customer}>
-										<td className="border-b border-neutral-300 px-2 py-3 text-sm">{row.customer}</td>
-										<td className="border-b border-neutral-300 px-2 py-3 text-sm">{row.orders}</td>
-										<td className="border-b border-neutral-300 px-2 py-3 text-sm">{euro.format(row.revenue)}</td>
-									</tr>
-								))}
-							</tbody>
-						</table>
-					</div>
+					<DataTable columns={customerColumns} emptyLabel="Aucun client à afficher." getRowKey={(row) => row.customer} rows={topCustomers} />
 				</SurfaceCard>
 		</PageShell>
 	);

@@ -1,10 +1,12 @@
 import React from 'react';
 
-export default function IconButton({ icon, label, badge, onClick, className = '' }) {
+export default function IconButton({ active = false, icon, label, badge, onClick, className = '' }) {
   return (
     <button
+      aria-pressed={active}
       onClick={onClick}
       aria-label={label}
+      type="button"
       className={`relative w-10 h-10 flex items-center justify-center rounded-full transition ${className}`}
     >
       <span className="material-symbols-rounded" style={{ fontSize: '1.65rem', lineHeight: 1 }}>{icon}</span>

@@ -1,4 +1,5 @@
-import { SectionHeader, SurfaceCard } from '../../components/layout';
+import SectionHeader from '../../components/layout/SectionHeader.jsx';
+import SurfaceCard from '../../components/layout/SurfaceCard.jsx';
 import { promises } from './homeData';
 
 export default function FeatureHighlights() {
@@ -9,7 +10,7 @@ export default function FeatureHighlights() {
 			<div className="mt-12 grid gap-8 md:grid-cols-3">
 				{promises.map((promise) => (
 					<SurfaceCard key={promise.title} className="p-6">
-						<span className="material-symbols-rounded inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-100 text-3xl text-primary-700">
+						<span className="material-symbols-rounded flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-100 text-2xl text-primary-700">
 							{promise.icon}
 						</span>
 						<h3 className="mt-6 text-2xl font-bold">{promise.title}</h3>

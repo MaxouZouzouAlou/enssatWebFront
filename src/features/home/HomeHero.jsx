@@ -1,4 +1,4 @@
-import { Link } from 'react-router';
+import { ActionLink } from '../../components/Button.jsx';
 import { homeImages } from './homeData';
 
 export default function HomeHero({ isAuthenticated = false }) {
@@ -14,26 +14,17 @@ export default function HomeHero({ isAuthenticated = false }) {
 					pour commander plus simplement, plus près, et au bon moment.
 				</p>
 				<div className="mt-8 flex flex-col gap-3 sm:flex-row">
-					<Link
-						className="inline-flex h-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 px-6 text-sm font-semibold text-white shadow-md transition hover:scale-[1.015]"
-						to="/achat"
-					>
+					<ActionLink className="h-12 px-6" to="/achat">
 						Découvrir les produits
-					</Link>
+					</ActionLink>
 					{isAuthenticated ? (
-						<Link
-							className="inline-flex h-12 items-center justify-center rounded-xl bg-neutral-50 px-6 text-sm font-semibold text-secondary-800 shadow-sm transition hover:bg-neutral-200"
-							to="/compte"
-						>
+						<ActionLink className="h-12 px-6" to="/compte" variant="light">
 							Mon compte
-						</Link>
+						</ActionLink>
 					) : (
-						<Link
-							className="inline-flex h-12 items-center justify-center rounded-xl bg-neutral-50 px-6 text-sm font-semibold text-secondary-800 shadow-sm transition hover:bg-neutral-200"
-							to="/register"
-						>
+						<ActionLink className="h-12 px-6" to="/register" variant="light">
 							Créer un compte
-						</Link>
+						</ActionLink>
 					)}
 				</div>
 			</div>

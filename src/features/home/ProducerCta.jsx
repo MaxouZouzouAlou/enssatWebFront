@@ -1,4 +1,4 @@
-import { Link } from 'react-router';
+import { ActionLink } from '../../components/Button.jsx';
 import { homeImages } from './homeData';
 
 export default function ProducerCta({ isAuthenticated = false, isProfessional = false }) {
@@ -19,19 +19,13 @@ export default function ProducerCta({ isAuthenticated = false, isProfessional = 
 						{content.description}
 					</p>
 					<div className="mt-8 flex flex-col gap-3 sm:flex-row">
-						<Link
-							className="inline-flex h-12 items-center justify-center rounded-xl bg-neutral-50 px-6 text-sm font-semibold text-primary-800 transition hover:bg-primary-50"
-							to={content.primaryPath}
-						>
+						<ActionLink className="h-12 px-6" to={content.primaryPath} variant="light">
 							{content.primaryLabel}
-						</Link>
+						</ActionLink>
 						{content.secondaryPath ? (
-							<Link
-								className="inline-flex h-12 items-center justify-center rounded-xl border border-primary-100/40 px-6 text-sm font-semibold text-white transition hover:bg-white/10"
-								to={content.secondaryPath}
-							>
+							<ActionLink className="h-12 px-6" to={content.secondaryPath} variant="outline">
 								{content.secondaryLabel}
-							</Link>
+							</ActionLink>
 						) : null}
 					</div>
 				</div>
