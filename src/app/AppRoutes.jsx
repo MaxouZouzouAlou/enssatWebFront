@@ -12,6 +12,7 @@ import LoginPage from '../pages/LoginPage.jsx';
 import PanierPage from '../pages/PanierPage.jsx';
 import ProfessionalDashboardPage from '../pages/ProfessionalDashboardPage.jsx';
 import RegisterPage from '../pages/RegisterPage.jsx';
+import InteractiveMapPage from '../pages/InteractiveMapPage.jsx';
 import { authClient } from '../services/auth-client';
 
 function MarketplaceLayout({ addToCart, cartItems, removeFromCart, updateQuantity }) {
@@ -109,6 +110,7 @@ export default function AppRoutes() {
 					element={requireProfessional(<ProfessionalDashboardPage accountType={accountType} professionalId={professionalId} />)}
 				/>
 				<Route path="/tickets-incidents" element={requireAuth(<IncidentTicketsPage />)} />
+				<Route path="/carte-interactive" element={<InteractiveMapPage />} />
 				<Route element={<MarketplaceLayout addToCart={addToCart} cartItems={cartItems} removeFromCart={removeFromCart} updateQuantity={updateQuantity} />}>
 					<Route path="/achat" element={<AchatPage />} />
 					<Route path="/panier" element={<PanierPage />} />

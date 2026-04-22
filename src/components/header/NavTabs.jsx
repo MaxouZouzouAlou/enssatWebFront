@@ -6,6 +6,7 @@ export default function NavTabs({ className = '', isProfessional = false, onNavi
 
   const tabs = [
     { label: 'Nos produits', path: '/achat' },
+    { label: 'Carte', path: '/carte-interactive' },
     ...(isProfessional ? [{ label: 'Dashboard', path: '/dashboard-producteur' }] : []),
   ];
 
