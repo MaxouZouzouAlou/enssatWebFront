@@ -5,8 +5,9 @@ export default function ProfessionalCompanyFields({ entreprise, fieldErrors, onC
 	return (
 			<SoftPanel>
 			<h3 className="text-sm font-semibold text-secondary-900">Entreprise</h3>
-			<div className="mt-4 grid gap-4 sm:grid-cols-2">
+			<div className="mt-4 grid gap-4 sm:grid-cols-3">
 				<FormField
+					className="sm:col-span-2"
 					error={fieldErrors['entreprise.nom']}
 					label="Nom de l'entreprise"
 					name="entreprise.nom"
@@ -15,6 +16,7 @@ export default function ProfessionalCompanyFields({ entreprise, fieldErrors, onC
 					value={entreprise.nom}
 				/>
 				<FormField
+					className="sm:col-span-1"
 					error={fieldErrors['entreprise.siret']}
 					help="14 chiffres."
 					inputMode="numeric"
@@ -27,6 +29,7 @@ export default function ProfessionalCompanyFields({ entreprise, fieldErrors, onC
 					value={entreprise.siret}
 				/>
 				<FormField
+					className="sm:col-span-3"
 					error={fieldErrors['entreprise.adresse_ligne']}
 					label="Adresse de l'entreprise"
 					name="entreprise.adresse_ligne"
@@ -35,6 +38,7 @@ export default function ProfessionalCompanyFields({ entreprise, fieldErrors, onC
 					value={entreprise.adresse_ligne}
 				/>
 				<FormField
+					className="sm:col-span-1"
 					error={fieldErrors['entreprise.code_postal']}
 					inputMode="numeric"
 					label="Code postal"
@@ -46,6 +50,7 @@ export default function ProfessionalCompanyFields({ entreprise, fieldErrors, onC
 					value={entreprise.code_postal}
 				/>
 				<FormField
+					className="sm:col-span-2"
 					error={fieldErrors['entreprise.ville']}
 					label="Ville"
 					name="entreprise.ville"

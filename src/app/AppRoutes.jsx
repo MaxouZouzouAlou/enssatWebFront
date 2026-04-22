@@ -1,4 +1,4 @@
-import { Navigate, Outlet, Route, Routes, useNavigate } from 'react-router';
+import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router';
 import PageTransition from '../components/PageTransition.jsx';
 import Header from '../components/header/Header.jsx';
 import SiteFooter from '../components/SiteFooter.jsx';
@@ -13,6 +13,12 @@ import PanierPage from '../pages/PanierPage.jsx';
 import ProfessionalDashboardPage from '../pages/ProfessionalDashboardPage.jsx';
 import RegisterPage from '../pages/RegisterPage.jsx';
 import { authClient } from '../services/auth-client';
+
+const protectedPaths = new Set(['/compte', '/dashboard-producteur', '/tickets-incidents']);
+
+export function getLogoutRedirectPath(pathname) {
+	return protectedPaths.has(pathname) ? '/' : null;
+}
 
 function MarketplaceLayout({ addToCart, cartItems, removeFromCart, updateQuantity }) {
 	return <Outlet context={{ addToCart, cartItems, removeFromCart, updateQuantity }} />;
@@ -32,6 +38,7 @@ function LoadingPage() {
 
 export default function AppRoutes() {
 	const navigate = useNavigate();
+	const location = useLocation();
 	const { clearProfile, profileState, refreshSession, sessionState } = useAuthProfile();
 	const profile = profileState.data?.profile;
 	const { cartItems, cartCount, addToCart, removeFromCart, updateQuantity } = useCart(profile);
@@ -44,8 +51,11 @@ export default function AppRoutes() {
 	const signOut = async () => {
 		await authClient.signOut();
 		clearProfile();
+		const redirectPath = getLogoutRedirectPath(location.pathname);
+		if (redirectPath) {
+			navigate(redirectPath, { replace: true });
+		}
 		await sessionState.refetch?.();
-		navigate('/login');
 	};
 
 	if (sessionState.isPending) return <LoadingPage />;

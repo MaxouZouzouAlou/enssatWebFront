@@ -92,10 +92,11 @@ export default function RegisterForm({ onSwitchToLogin }) {
 	};
 
 	return (
-		<div className="rounded-2xl bg-neutral-50 p-5 shadow-[0_16px_40px_rgba(29,52,34,.10)] sm:p-8">
-			<div className="mb-7">
-				<p className="text-sm font-semibold uppercase tracking-wide text-primary-600">Inscription</p>
-				<h2 className="mt-2 text-2xl font-semibold text-secondary-900">Creer un compte</h2>
+		<div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-5 sm:p-8">
+			<div className="mb-7 space-y-2">
+				<p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-600">Inscription</p>
+				<h2 className="font-title text-3xl font-semibold leading-tight text-secondary-900">Créer un compte</h2>
+				<p className="text-sm text-secondary-600">Accédez aux produits locaux et suivez vos achats en toute simplicité.</p>
 			</div>
 
 			<AccountTypeToggle accountType={accountType} onChange={setAccountType} />
@@ -172,26 +173,26 @@ export default function RegisterForm({ onSwitchToLogin }) {
 					/>
 				) : null}
 
-				<PrimaryButton type="submit" loading={loading}>
-					Creer le compte
+				<PrimaryButton className="mt-1 h-12 w-full text-base" type="submit" loading={loading}>
+					Créer le compte
 				</PrimaryButton>
 			</form>
 
 			{accountType === 'particulier' ? (
 				<>
-					<div className="my-5 flex items-center gap-3">
+					<div className="my-6 flex items-center gap-3">
 						<div className="h-px flex-1 bg-neutral-300" />
-						<span className="text-xs font-medium uppercase tracking-wide text-neutral-500">ou</span>
+						<span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-neutral-500">ou</span>
 						<div className="h-px flex-1 bg-neutral-300" />
 					</div>
 					<SecondaryButton type="button" disabled={googleLoading} onClick={registerWithGoogle}>
-						{googleLoading ? 'Redirection...' : 'Creer un compte particulier avec Google'}
+						{googleLoading ? 'Redirection...' : 'Créer un compte particulier avec Google'}
 					</SecondaryButton>
 				</>
 			) : null}
 
 			<p className="mt-6 text-center text-sm text-neutral-600">
-				Deja inscrit ?{' '}
+				Déjà inscrit ?{' '}
 				<button type="button" className="font-semibold text-primary-600 hover:text-primary-700" onClick={onSwitchToLogin}>
 					Se connecter
 				</button>
