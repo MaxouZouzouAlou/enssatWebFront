@@ -1,6 +1,5 @@
-import React from 'react';
-import achatService from '../services/achatPage';
-import SurfaceCard from './layout/SurfaceCard.jsx';
+import React, { useState } from 'react';
+import shoppingCart from '../services/shoppingCart';
 
 export default function ProductCard({ product, onAdd = () => {} }) {
   const id = product.idProduit ?? product.id ?? product._id;
@@ -13,47 +12,82 @@ export default function ProductCard({ product, onAdd = () => {} }) {
   const visible = product.visible === 1 || product.visible === '1' || product.visible === true;
 
   return (
-    <SurfaceCard interactive className="p-4">
+    <article
+      className="bg-white/90 backdrop-blur-sm border border-green-100 rounded-xl p-4 shadow-sm hover:shadow-lg transform hover:-translate-y-1 transition">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-lg font-semibold text-primary-700">{name}</h2>
-          {nature && <p className="text-sm text-primary-500">{nature}</p>}
+          <h2 className="text-lg font-semibold text-green-800">{name}</h2>
+          {nature && <p className="text-sm text-green-600">{nature}</p>}
         </div>
         <div className="text-right">
           {price != null ? (
             <div className="inline-flex items-center gap-2">
-              <span className="text-sm text-primary-500">Prix</span>
-              <span className="text-xl font-bold text-primary-700">{price} €</span>
+              <span className="text-sm text-green-600">Prix</span>
+              <span className="text-xl font-bold text-green-800">{price} €</span>
             </div>
           ) : (
-            <span className="text-sm text-neutral-500">Prix non disponible</span>
+            <span className="text-sm text-gray-500">Prix non disponible</span>
           )}
         </div>
       </div>
 
       <div className="mt-3 flex items-center gap-2">
-        {bio && <span className="px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded">Bio</span>}
+        {bio && <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">Bio</span>}
         {!visible && <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded">Masqué</span>}
       </div>
 
       <div className="mt-4 flex items-center justify-between">
-        <p className="text-sm text-neutral-600">
-          Stock : <span className="font-medium text-secondary-700">{stock ?? '—'}</span>
-        </p>
-        <button
-          onClick={async () => {
-            try {
-              await achatService.addProductToShoppingCart(id);
-            } catch (err) {
-              console.error('Failed to add product to shopping cart', err);
-            }
-            onAdd(product);
-          }}
-          className="rounded-xl bg-primary-600 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-primary-700"
-        >
-          Ajouter
-        </button>
+        <p className="text-sm text-gray-600">Stock: <span className="font-medium text-gray-800">{stock ?? '—'}</span></p>
+        {product.unitaireOuKilo === 1 || product.unitaireOuKilo === true ? (
+          <button
+            onClick={async () => {
+              const id = product.idProduit ?? product.id ?? product._id;
+              try {
+                await shoppingCart.addProductToShoppingCart(6, id, 1);
+              } catch (err) {
+                console.error('Failed to add product to shopping cart', err);
+              }
+              onAdd(product, 1);
+            }}
+            className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition text-sm"
+          >
+            Ajouter
+          </button>
+        ) : (
+          <KiloAdd product={product} onAdd={onAdd} />
+        )}
       </div>
-    </SurfaceCard>
+    </article>
+  );
+}
+
+function KiloAdd({ product, onAdd }) {
+  const [qty, setQty] = useState('0.1');
+  const id = product.idProduit ?? product.id ?? product._id;
+  return (
+    <div className="flex items-center gap-2">
+      <input
+        type="number"
+        min="0.1"
+        step="0.1"
+        value={qty}
+        onChange={(e) => setQty(e.target.value)}
+        className="w-20 border rounded px-2 py-1 text-sm"
+      />
+      <button
+        onClick={async () => {
+          const q = parseFloat(qty) || 0.1;
+          try {
+            await shoppingCart.addProductToShoppingCart(6, id, q);
+          } catch (err) {
+            console.error('Failed to add product to shopping cart', err);
+          }
+          onAdd(product, q);
+        }}
+        className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition text-sm"
+      >
+        Ajouter
+      </button>
+    </div>
   );
 }
