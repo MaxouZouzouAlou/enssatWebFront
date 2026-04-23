@@ -54,7 +54,7 @@ const [myProducts, setMyProducts] = useState([]);
 const [loadingProducts, setLoadingProducts] = useState(false);
 const [productError, setProductError] = useState('');
 
-const [newProduct, setNewProduct] = useState({ nomProduit: '', prix: '', unitaireOuKilo: 1, stock: 0, nature: '', bio: false, tva: 0, reductionPro: 0, image: null });
+const [newProduct, setNewProduct] = useState({ nomProduit: '', prix: '', unitaireOuKilo: 1, stock: 0, nature: 'Autre', bio: false, tva: 0, reductionPro: 0, image: null });
 const [imagePreview, setImagePreview] = useState(null);
 const { image } = newProduct || {};
 
@@ -86,7 +86,7 @@ const submitNewProduct = async (e) => {
 		await createProductForProfessional(professionalId, newProduct);
 		const list = await getProductsForProfessional(professionalId);
 		setMyProducts(list || []);
-		setNewProduct({ nomProduit: '', prix: '', unitaireOuKilo: 1, stock: 0, nature: '', bio: false, tva: 0, reductionPro: 0, image: null });
+		setNewProduct({ nomProduit: '', prix: '', unitaireOuKilo: 1, stock: 0, nature: 'Autre', bio: false, tva: 0, reductionPro: 0, image: null });
 	} catch (err) {
 		setProductError(err.message || 'Erreur creation produit');
 	}
@@ -289,6 +289,17 @@ useEffect(() => {
 														<input type="number" step="1" className="border rounded px-2 py-1" value={editingValues.stock ?? p.stock} onChange={(e) => setEditingValues({...editingValues, stock: e.target.value})} />
 														<label className="flex items-center gap-2"><input type="checkbox" checked={editingValues.visible ?? Boolean(p.visible)} onChange={(e) => setEditingValues({...editingValues, visible: e.target.checked})} /> Visible</label>
 													</div>
+													<div>
+														<label className="block text-xs font-semibold text-neutral-700 mb-1">Nature</label>
+														<select className="w-full border border-neutral-200 rounded px-2 py-1" value={editingValues.nature ?? p.nature ?? 'Autre'} onChange={(e) => setEditingValues({...editingValues, nature: e.target.value})}>
+															<option value="Autre">Autre</option>
+															<option value="Boulangerie">Boulangerie</option>
+															<option value="Légume">Légume</option>
+															<option value="Viande">Viande</option>
+															<option value="Fruit">Fruit</option>
+															<option value="Laitier">Laitier</option>
+														</select>
+													</div>
 													<div className="flex gap-2 justify-end">
 														<button type="button" className="px-3 py-1 bg-gray-200 rounded" onClick={() => { setEditingId(null); setEditingValues({}); }}>Annuler</button>
 														<button type="button" className="px-3 py-1 bg-green-600 text-white rounded" onClick={async () => {
@@ -324,7 +335,7 @@ useEffect(() => {
 													</div>
 													<div className="flex items-center gap-2">
 														<div className="text-sm text-gray-600">Stock: {p.stock ?? '—'}</div>
-														<button className="px-3 py-1 bg-gray-100 rounded" onClick={() => { setEditingId(p.idProduit || p.id); setEditingValues({ nomProduit: p.nomProduit ?? p.nom ?? p.name, prix: p.prix, stock: p.stock, visible: Boolean(p.visible) }); }}>Editer</button>
+														<button className="px-3 py-1 bg-gray-100 rounded" onClick={() => { setEditingId(p.idProduit || p.id); setEditingValues({ nomProduit: p.nomProduit ?? p.nom ?? p.name, prix: p.prix, stock: p.stock, visible: Boolean(p.visible), nature: p.nature ?? '' }); }}>Editer</button>
 													</div>
 												</div>
 											)}
@@ -375,7 +386,14 @@ useEffect(() => {
 
 										<div>
 											<label className="block text-xs font-semibold text-neutral-700 mb-1">Nature</label>
-											<input className="w-full border border-neutral-200 rounded-md px-3 py-2 text-sm" value={newProduct.nature} onChange={(e) => setNewProduct({...newProduct, nature: e.target.value})} />
+											<select className="w-full border border-neutral-200 rounded-md px-3 py-2 text-sm" value={newProduct.nature} onChange={(e) => setNewProduct({...newProduct, nature: e.target.value})}>
+												<option value="Autre">Autre</option>
+												<option value="Boulangerie">Boulangerie</option>
+												<option value="Légume">Légume</option>
+												<option value="Viande">Viande</option>
+												<option value="Fruit">Fruit</option>
+												<option value="Laitier">Laitier</option>
+											</select>
 										</div>
 
 										<div>
