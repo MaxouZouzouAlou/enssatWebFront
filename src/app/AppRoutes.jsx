@@ -232,6 +232,7 @@ export default function AppRoutes() {
 								user={sessionState.data?.user}
 								isProfessional={isProfessional}
 								professionalCompanies={professionalCompanies}
+								onSelectProfessionalCompany={setSelectedProfessionalCompanyId}
 								onProfileRefresh={refreshSession}
 							/>
 					)}

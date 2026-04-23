@@ -169,6 +169,11 @@ input {
   -webkit-appearance: none;
 }
 
+input.hide-password-reveal::-ms-reveal,
+input.hide-password-reveal::-ms-clear {
+  display: none;
+}
+
 h1,
 h2,
 h3,
