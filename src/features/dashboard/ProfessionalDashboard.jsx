@@ -21,6 +21,7 @@ import PageShell from '../../components/layout/PageShell.jsx';
 import SectionHeader from '../../components/layout/SectionHeader.jsx';
 import SurfaceCard from '../../components/layout/SurfaceCard.jsx';
 import { fetchProfessionalDashboard } from '../../services/dashboard-client';
+import { getProductsForProfessional, createProductForProfessional, updateProductForProfessional, deleteProductForProfessional } from '../../services/professionalProducts';
 
 const euro = new Intl.NumberFormat('fr-FR', { currency: 'EUR', style: 'currency' });
 const number = new Intl.NumberFormat('fr-FR');
@@ -54,6 +55,61 @@ export default function ProfessionalDashboard({
 	const [dashboard, setDashboard] = useState(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
+
+// Professional products management: hooks must be declared before any conditional returns
+const [myProducts, setMyProducts] = useState([]);
+const [loadingProducts, setLoadingProducts] = useState(false);
+const [productError, setProductError] = useState('');
+
+const [newProduct, setNewProduct] = useState({ nomProduit: '', prix: '', unitaireOuKilo: 1, stock: 0, nature: 'Autre', bio: false, tva: 0, reductionPro: 0, image: null });
+const [imagePreview, setImagePreview] = useState(null);
+const { image } = newProduct || {};
+
+const [editingId, setEditingId] = useState(null);
+const [editingValues, setEditingValues] = useState({});
+const [editingPreview, setEditingPreview] = useState(null);
+
+useEffect(() => {
+	if (image) {
+		const url = URL.createObjectURL(image);
+		setImagePreview(url);
+		return () => URL.revokeObjectURL(url);
+	}
+	setImagePreview(null);
+}, [image]);
+
+useEffect(() => {
+	if (editingValues.image) {
+		const url = URL.createObjectURL(editingValues.image);
+		setEditingPreview(url);
+		return () => URL.revokeObjectURL(url);
+	}
+	setEditingPreview(null);
+}, [editingValues.image]);
+
+const submitNewProduct = async (e) => {
+	e.preventDefault();
+	try {
+		await createProductForProfessional(professionalId, newProduct);
+		const list = await getProductsForProfessional(professionalId);
+		setMyProducts(list || []);
+		setNewProduct({ nomProduit: '', prix: '', unitaireOuKilo: 1, stock: 0, nature: 'Autre', bio: false, tva: 0, reductionPro: 0, image: null });
+	} catch (err) {
+		setProductError(err.message || 'Erreur creation produit');
+	}
+};
+
+useEffect(() => {
+    if (!isProfessional || !professionalId) return;
+    let ignore = false;
+    setLoadingProducts(true);
+    setProductError('');
+    getProductsForProfessional(professionalId)
+        .then((data) => { if (!ignore) setMyProducts(data || []); })
+        .catch((err) => { if (!ignore) setProductError(err.message || 'Erreur'); })
+        .finally(() => { if (!ignore) setLoadingProducts(false); });
+    return () => { ignore = true; };
+}, [isProfessional, professionalId]);
 
 	useEffect(() => {
 		if (!isProfessional || !professionalId) return;
@@ -112,6 +168,8 @@ export default function ProfessionalDashboard({
 		{ key: 'orders', header: 'Commandes' },
 		{ key: 'revenue', header: 'CA genere', render: (row) => euro.format(row.revenue) },
 	];
+
+
 
 	return (
 		<PageShell contentClassName="grid grid-cols-12 gap-5">
@@ -213,6 +271,168 @@ export default function ProfessionalDashboard({
 						<p className="text-sm text-neutral-600">Comptes les plus actifs</p>
 					</div>
 					<DataTable columns={customerColumns} emptyLabel="Aucun client à afficher." getRowKey={(row) => row.customer} rows={topCustomers} />
+				</SurfaceCard>
+
+				<SurfaceCard className="col-span-12 p-4 xl:col-span-12">
+					<div className="mb-3 flex items-end justify-between gap-3">
+						<h2 className="text-2xl font-bold">Mes produits en vente</h2>
+						<p className="text-sm text-neutral-600">Gerez vos produits et ajoutez-en de nouveaux</p>
+					</div>
+					{loadingProducts ? (
+						<div className="text-sm text-neutral-600">Chargement des produits...</div>
+					) : productError ? (
+						<div className="text-sm text-red-600">Erreur: {productError}</div>
+					) : (
+						<div className="grid gap-4 md:grid-cols-2">
+							<div>
+								<ul className="space-y-3">
+									{myProducts.length === 0 ? (
+										<li className="text-gray-600">Aucun produit publié.</li>
+									) : myProducts.map((p) => (
+										<li key={p.idProduit ?? p.id} className="border rounded p-3">
+											{editingId === (p.idProduit || p.id) ? (
+												<div className="grid gap-2">
+													<div className="flex items-center gap-3">
+														{editingPreview || p.imageData ? (
+															<img src={editingPreview || p.imageData} alt={p.nomProduit ?? p.nom ?? p.name} className="h-12 w-12 object-cover rounded-md border" />
+														) : (
+															<div className="h-12 w-12 rounded-md bg-neutral-50 border flex items-center justify-center text-xs text-neutral-400">Image</div>
+														)}
+												<input type="file" accept="image/*" onChange={(e) => setEditingValues({...editingValues, image: e.target.files && e.target.files[0] ? e.target.files[0] : null})} />
+													</div>
+													<input className="w-full border rounded px-2 py-1" value={editingValues.nomProduit ?? editingValues.nom ?? p.nomProduit ?? p.nom ?? ''} onChange={(e) => setEditingValues({...editingValues, nomProduit: e.target.value})} />
+													<div className="grid grid-cols-3 gap-2">
+														<input type="number" step="0.01" className="border rounded px-2 py-1" value={editingValues.prix ?? p.prix} onChange={(e) => setEditingValues({...editingValues, prix: e.target.value})} />
+														<input type="number" step="1" className="border rounded px-2 py-1" value={editingValues.stock ?? p.stock} onChange={(e) => setEditingValues({...editingValues, stock: e.target.value})} />
+														<label className="flex items-center gap-2"><input type="checkbox" checked={editingValues.visible ?? Boolean(p.visible)} onChange={(e) => setEditingValues({...editingValues, visible: e.target.checked})} /> Visible</label>
+													</div>
+													<div>
+														<label className="block text-xs font-semibold text-neutral-700 mb-1">Nature</label>
+														<select className="w-full border border-neutral-200 rounded px-2 py-1" value={editingValues.nature ?? p.nature ?? 'Autre'} onChange={(e) => setEditingValues({...editingValues, nature: e.target.value})}>
+															<option value="Autre">Autre</option>
+															<option value="Boulangerie">Boulangerie</option>
+															<option value="Légume">Légume</option>
+															<option value="Viande">Viande</option>
+															<option value="Fruit">Fruit</option>
+															<option value="Laitier">Laitier</option>
+														</select>
+													</div>
+													<div className="flex gap-2 justify-end">
+														<button type="button" className="px-3 py-1 bg-gray-200 rounded" onClick={() => { setEditingId(null); setEditingValues({}); }}>Annuler</button>
+														<button type="button" className="px-3 py-1 bg-green-600 text-white rounded" onClick={async () => {
+															try {
+																await updateProductForProfessional(professionalId, p.idProduit || p.id, editingValues);
+																const list = await getProductsForProfessional(professionalId);
+																setMyProducts(list || []);
+																setEditingId(null);
+															} catch (err) { setProductError(err.message || 'Erreur mise à jour'); }
+														}}>Sauvegarder</button>
+														<button type="button" className="px-3 py-1 bg-red-600 text-white rounded" onClick={async () => {
+															if (!window.confirm('Supprimer ce produit ?')) return;
+															try {
+																await deleteProductForProfessional(professionalId, p.idProduit || p.id);
+																const list = await getProductsForProfessional(professionalId);
+																setMyProducts(list || []);
+															} catch (err) { setProductError(err.message || 'Erreur suppression'); }
+														}}>Supprimer</button>
+													</div>
+												</div>
+											) : (
+												<div className="flex items-center justify-between gap-3">
+													<div className="flex items-center gap-3 min-w-0">
+														{p.imageData ? (
+															<img src={p.imageData} alt={p.nomProduit ?? p.nom ?? p.name} className="h-12 w-12 object-cover rounded-md border flex-shrink-0" />
+														) : (
+															<div className="h-12 w-12 rounded-md bg-neutral-50 border flex items-center justify-center text-xs text-neutral-400 flex-shrink-0">Image</div>
+														)}
+													<div className="min-w-0">
+															<div className="font-medium text-green-800 truncate">{p.nomProduit ?? p.nom ?? p.name}</div>
+															<div className="text-sm text-gray-600 truncate">{(Number(p.prix) || 0).toFixed(2)} € — {p.unitaireOuKilo === 1 ? 'Unité' : 'Kilo'}</div>
+															</div>
+													</div>
+													<div className="flex items-center gap-2">
+														<div className="text-sm text-gray-600">Stock: {p.stock ?? '—'}</div>
+														<button className="px-3 py-1 bg-gray-100 rounded" onClick={() => { setEditingId(p.idProduit || p.id); setEditingValues({ nomProduit: p.nomProduit ?? p.nom ?? p.name, prix: p.prix, stock: p.stock, visible: Boolean(p.visible), nature: p.nature ?? '' }); }}>Editer</button>
+													</div>
+												</div>
+											)}
+										</li>
+									))}
+								</ul>
+							</div>
+							<div>
+								<form onSubmit={submitNewProduct} className="bg-white p-4 rounded-lg shadow-sm space-y-4">
+									{productError ? <div className="text-sm text-red-600">{productError}</div> : null}
+									<div className="grid grid-cols-1 gap-3">
+										<div>
+											<label className="block text-xs font-semibold text-neutral-700 mb-1">Nom du produit</label>
+											<input className="w-full border border-neutral-200 rounded-md px-3 py-2 text-sm" value={newProduct.nomProduit} onChange={(e) => setNewProduct({...newProduct, nomProduit: e.target.value})} />
+										</div>
+										<div className="grid grid-cols-2 gap-3">
+											<div>
+												<label className="block text-xs font-semibold text-neutral-700 mb-1">Prix (€)</label>
+												<input type="number" step="0.01" className="w-full border border-neutral-200 rounded-md px-3 py-2 text-sm" value={newProduct.prix} onChange={(e) => setNewProduct({...newProduct, prix: e.target.value})} />
+											</div>
+											<div>
+												<label className="block text-xs font-semibold text-neutral-700 mb-1">Stock</label>
+												<input type="number" step="1" className="w-full border border-neutral-200 rounded-md px-3 py-2 text-sm" value={newProduct.stock} onChange={(e) => setNewProduct({...newProduct, stock: e.target.value})} />
+											</div>
+										</div>
+
+										<div className="grid grid-cols-2 gap-3 items-center">
+											<label className="flex items-center gap-2 text-sm">
+												<input type="checkbox" className="h-4 w-4" checked={newProduct.unitaireOuKilo === 1} onChange={(e) => setNewProduct({...newProduct, unitaireOuKilo: e.target.checked ? 1 : 0})} />
+												<span className="text-sm text-neutral-700">Vendu à l'unité</span>
+											</label>
+											<label className="flex items-center gap-2 text-sm">
+												<input type="checkbox" className="h-4 w-4" checked={newProduct.bio === true || newProduct.bio === 1} onChange={(e) => setNewProduct({...newProduct, bio: e.target.checked ? 1 : 0})} />
+												<span className="text-sm text-neutral-700">Bio</span>
+											</label>
+										</div>
+
+										<div className="grid grid-cols-2 gap-3">
+											<div>
+												<label className="block text-xs font-semibold text-neutral-700 mb-1">TVA (%)</label>
+												<input type="number" step="0.1" className="w-full border border-neutral-200 rounded-md px-3 py-2 text-sm" value={newProduct.tva} onChange={(e) => setNewProduct({...newProduct, tva: e.target.value})} />
+											</div>
+											<div>
+												<label className="block text-xs font-semibold text-neutral-700 mb-1">Réduction pro (%)</label>
+												<input type="number" step="0.1" className="w-full border border-neutral-200 rounded-md px-3 py-2 text-sm" value={newProduct.reductionPro} onChange={(e) => setNewProduct({...newProduct, reductionPro: e.target.value})} />
+											</div>
+										</div>
+
+										<div>
+											<label className="block text-xs font-semibold text-neutral-700 mb-1">Nature</label>
+											<select className="w-full border border-neutral-200 rounded-md px-3 py-2 text-sm" value={newProduct.nature} onChange={(e) => setNewProduct({...newProduct, nature: e.target.value})}>
+												<option value="Autre">Autre</option>
+												<option value="Boulangerie">Boulangerie</option>
+												<option value="Légume">Légume</option>
+												<option value="Viande">Viande</option>
+												<option value="Fruit">Fruit</option>
+												<option value="Laitier">Laitier</option>
+											</select>
+										</div>
+
+										<div>
+											<label className="block text-xs font-semibold text-neutral-700 mb-1">Image produit</label>
+											<div className="flex items-center gap-3">
+												<input type="file" accept="image/*" onChange={(e) => setNewProduct({...newProduct, image: e.target.files && e.target.files[0] ? e.target.files[0] : null})} />
+												{imagePreview ? (
+													<img src={imagePreview} alt="preview" className="h-16 w-16 object-cover rounded-md border" />
+												) : (
+													<div className="h-16 w-16 rounded-md bg-neutral-50 border flex items-center justify-center text-sm text-neutral-400">Aperçu</div>
+												)}
+											</div>
+										</div>
+									</div>
+
+									<div className="flex items-center justify-end">
+										<ActionButton type="submit" className="px-5">Ajouter le produit</ActionButton>
+									</div>
+								</form>
+							</div>
+						</div>
+					)}
 				</SurfaceCard>
 		</PageShell>
 	);
