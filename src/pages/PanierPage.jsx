@@ -118,7 +118,10 @@ function PanierPage() {
 				)));
 				setSelectedVoucherId('');
 			}
-			setCheckoutSuccess(result.order);
+			setCheckoutSuccess({
+				...result.order,
+				gainedPoints: result.loyalty?.gainedPoints ?? null
+			});
 		} catch (error) {
 			setCheckoutError(error.message || 'Impossible de valider la commande.');
 		} finally {
@@ -156,6 +159,9 @@ function PanierPage() {
 				<div className="mt-6">
 					<Alert type="success">
 						Commande #{checkoutSuccess.idCommande} enregistrée pour un total de {checkoutSuccess.prixTotal.toFixed(2)} €.
+						{typeof checkoutSuccess.gainedPoints === 'number'
+							? ` ${checkoutSuccess.gainedPoints} point(s) de fidelite gagnes.`
+							: ''}
 					</Alert>
 				</div>
 			) : null}

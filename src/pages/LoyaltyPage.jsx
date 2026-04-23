@@ -8,7 +8,6 @@ import {
   claimLoyaltyChallenge,
   fetchMyLoyalty,
   redeemVoucher,
-  rewardOrder,
 } from '../services/loyalty-client.js';
 
 function euro(value) {
@@ -20,7 +19,6 @@ export default function LoyaltyPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-  const [simulatedTotal, setSimulatedTotal] = useState('25');
 
   const loadLoyalty = async () => {
     setLoading(true);
@@ -68,22 +66,6 @@ export default function LoyaltyPage() {
     }
   };
 
-  const onSimulateOrder = async () => {
-    const total = Number(simulatedTotal || 0);
-    if (!Number.isFinite(total) || total <= 0) {
-      setError('Montant de commande invalide.');
-      return;
-    }
-
-    try {
-      const result = await rewardOrder(total);
-      setMessage(result.message || 'Points attribues.');
-      await loadLoyalty();
-    } catch (err) {
-      setError(err.message || 'Impossible de simuler la commande.');
-    }
-  };
-
   return (
     <PageShell contentClassName="max-w-5xl">
       <SectionHeader eyebrow="Fidelite" title="Mes points et recompenses">
@@ -124,18 +106,12 @@ export default function LoyaltyPage() {
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
               <SoftPanel className="space-y-3">
                 <p className="text-sm font-semibold text-secondary-900">Gagner des points via une commande</p>
-                <p className="text-sm text-neutral-600">Simulation basique: 1 point gagne par euro de commande.</p>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="number"
-                    min="1"
-                    step="0.01"
-                    value={simulatedTotal}
-                    onChange={(event) => setSimulatedTotal(event.target.value)}
-                    className="h-10 w-32 rounded-lg border border-neutral-300 px-3"
-                  />
-                  <ActionButton type="button" onClick={onSimulateOrder} className="h-10">Crediter points</ActionButton>
-                </div>
+                <p className="text-sm text-neutral-600">
+                  Les points sont maintenant attribues automatiquement lors de la validation d'une commande reelle.
+                </p>
+                <p className="text-sm text-neutral-600">
+                  Regle actuelle: 1 point par euro reellement paye, arrondi a l'entier inferieur.
+                </p>
               </SoftPanel>
 
               <SoftPanel className="space-y-3">

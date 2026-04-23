@@ -37,15 +37,3 @@ export async function redeemVoucher(pointsToSpend = 500) {
   });
   return parseResponse(response, 'Impossible de convertir les points en bon.');
 }
-
-export async function rewardOrder(orderTotal) {
-  const response = await fetch(`${API_BASE_URL}/loyalty/orders/reward`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ orderTotal }),
-  });
-  return parseResponse(response, 'Impossible d\'attribuer les points de commande.');
-}
