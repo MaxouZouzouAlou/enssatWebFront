@@ -58,6 +58,36 @@ export async function updatePersonalAddress(payload) {
 	return data;
 }
 
+export async function updatePersonalProfile(payload) {
+	const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+		method: 'PUT',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		credentials: 'include',
+		body: JSON.stringify(payload)
+	});
+
+	const data = await response.json().catch(() => ({}));
+	if (!response.ok) {
+		throw new Error(data.error || 'Impossible de mettre a jour votre profil.');
+	}
+	return data;
+}
+
+export async function deletePersonalAccount() {
+	const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+		method: 'DELETE',
+		credentials: 'include'
+	});
+
+	const data = await response.json().catch(() => ({}));
+	if (!response.ok) {
+		throw new Error(data.error || 'Impossible de supprimer votre compte.');
+	}
+	return data;
+}
+
 export async function requestPasswordReset(email) {
 	const redirectTo = `${window.location.origin}/reset-password`;
 	const response = await fetch(`${API_BASE_URL}/api/auth/request-password-reset`, {

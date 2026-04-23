@@ -6,7 +6,7 @@ const variantClasses = {
 	primary: 'bg-gradient-to-br from-primary-500 to-primary-700 text-white shadow-md hover:scale-[1.015] disabled:from-neutral-400 disabled:to-neutral-400 disabled:shadow-none disabled:scale-100',
 	secondary: 'bg-neutral-100 text-secondary-800 hover:bg-neutral-200 disabled:bg-neutral-200',
 	light: 'bg-neutral-50 text-secondary-800 shadow-sm hover:bg-neutral-200 disabled:bg-neutral-200',
-	danger: 'bg-red-50 text-red-700 hover:bg-red-100 disabled:bg-neutral-200',
+	danger: 'bg-red-300 text-red-700 hover:bg-red-600 hover:text-white disabled:bg-neutral-200',
 	outline: 'border border-primary-100/40 text-white hover:bg-white/10 disabled:opacity-50',
 };
 
