@@ -136,6 +136,7 @@ export default function InteractiveMapPage() {
                   <Popup>
                     <p className="font-semibold">{location.typeLieu || 'Lieu de vente'}</p>
                     <p className="text-sm">{formatAddress(location)}</p>
+                    <p className="text-sm">Horaires: {selectedLieu?.horaires}</p>
                     <p className="text-sm">{Number(location.offresCount || 0)} offre(s)</p>
                   </Popup>
                 </Marker>
