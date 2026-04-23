@@ -58,6 +58,8 @@ export default function InteractiveMapPage() {
   useEffect(() => {
     if (!selectedLieuId) return;
 
+    setSelectedData(null);
+
     const run = async () => {
       setLoadingOffers(true);
       try {
@@ -81,7 +83,16 @@ export default function InteractiveMapPage() {
     return [lat, lng];
   }, [locations]);
 
-  const offers = selectedData?.offres || [];
+  const offers = useMemo(() => {
+    if (!Array.isArray(selectedData?.offres)) return [];
+    return selectedData.offres.map((offer, index) => ({
+      ...offer,
+      _key: offer.idProduit != null && offer.idProfessionnel != null
+        ? `${offer.idProduit}-${offer.idProfessionnel}`
+        : `${offer.nom ?? 'offer'}-${index}`,
+    }));
+  }, [selectedData]);
+
   const selectedLieu = selectedData?.lieu;
 
   return (
@@ -154,7 +165,7 @@ export default function InteractiveMapPage() {
 
           <div className="mt-4 space-y-3 max-h-[360px] overflow-auto pr-1">
             {offers.map((offer) => (
-              <div key={`${offer.idProduit}-${offer.idProfessionnel}`} className="rounded-xl border border-neutral-200 bg-white p-3">
+              <div key={offer._key} className="rounded-xl border border-neutral-200 bg-white p-3">
                 <div className="flex items-start justify-between gap-3">
                   <h3 className="font-semibold text-secondary-900">{offer.nom}</h3>
                   <span className="rounded-full bg-primary-100 px-2 py-0.5 text-xs font-semibold text-primary-700">
