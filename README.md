@@ -98,12 +98,16 @@ the frontend runs on `http://localhost:3000` and calls the backend on
 ```bash
 PORT=3000
 REACT_APP_API_URL=http://localhost:49161
+REACT_APP_ENABLE_GOOGLE_AUTH=false
 ```
 
 Email/password registration redirects users through email verification before
 login. Professional registration collects the company address
 (`adresse_ligne`, `code_postal`, `ville`); the user personal address is not
 collected during account creation.
+
+Set `REACT_APP_ENABLE_GOOGLE_AUTH=true` only when the backend also has
+`GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` configured.
 
 ### `npm start`
 
