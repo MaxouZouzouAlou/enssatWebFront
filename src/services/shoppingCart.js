@@ -101,4 +101,6 @@ async function removerProductsFromShoppingCart(idPanier, idProduit) {
     }
 }
 
-export default { addProductToShoppingCart, getShoppingCartItems, removeProductFromShoppingCart, removerProductsFromShoppingCart };
+const shoppingCart = { addProductToShoppingCart, getShoppingCartItems, removeProductFromShoppingCart, removerProductsFromShoppingCart };
+
+export default shoppingCart;

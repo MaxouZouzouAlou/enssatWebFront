@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import shoppingCart from '../services/shoppingCart';
 
 export default function ProductCard({ product, onAdd = () => {} }) {
-  const id = product.idProduit ?? product.id ?? product._id;
   const name = product.nom ?? product.name ?? product.title ?? 'Sans nom';
   const priceRaw = product.prix ?? product.price;
   const price = priceRaw != null && priceRaw !== '' ? Number(priceRaw).toFixed(2) : null;
@@ -15,9 +14,16 @@ export default function ProductCard({ product, onAdd = () => {} }) {
     <article
       className="bg-white/90 backdrop-blur-sm border border-green-100 rounded-xl p-4 shadow-sm hover:shadow-lg transform hover:-translate-y-1 transition">
       <div className="flex items-start justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-semibold text-green-800">{name}</h2>
-          {nature && <p className="text-sm text-green-600">{nature}</p>}
+        <div className="flex items-center gap-3 min-w-0">
+          {product.imageData ? (
+            <img src={product.imageData} alt={name} className="h-16 w-16 rounded-md object-cover border flex-shrink-0" />
+          ) : (
+            <div className="h-16 w-16 rounded-md bg-neutral-50 border flex items-center justify-center text-sm text-neutral-400 flex-shrink-0">Image</div>
+          )}
+          <div className="min-w-0">
+            <h2 className="text-lg font-semibold text-green-800 truncate">{name}</h2>
+            {nature && <p className="text-sm text-green-600 truncate">{nature}</p>}
+          </div>
         </div>
         <div className="text-right">
           {price != null ? (
