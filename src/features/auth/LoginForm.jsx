@@ -11,7 +11,7 @@ export default function LoginForm({ onAuthenticated, onSwitchToRegister }) {
 	const [googleLoading, setGoogleLoading] = useState(false);
 	const [error, setError] = useState('');
 	const [fieldErrors, setFieldErrors] = useState({});
-	const [success, setSuccess] = useState(new URLSearchParams(window.location.search).get('verified') ? 'Email verifie. Vous pouvez vous connecter.' : '');
+	const [success, setSuccess] = useState(new URLSearchParams(window.location.search).get('verified') ? 'Email vérifié. Vous pouvez vous connecter.' : '');
 
 	const update = (field) => (event) => {
 		setFieldErrors((current) => ({ ...current, [field]: '' }));
@@ -63,7 +63,7 @@ export default function LoginForm({ onAuthenticated, onSwitchToRegister }) {
 
 	const resendVerification = async () => {
 		if (!form.email) {
-			setError('Renseignez votre email pour renvoyer la verification.');
+			setError('Renseignez votre email pour renvoyer la vérification.');
 			return;
 		}
 		setLoading(true);
@@ -71,7 +71,7 @@ export default function LoginForm({ onAuthenticated, onSwitchToRegister }) {
 		setSuccess('');
 		try {
 			await resendVerificationEmail(form.email);
-			setSuccess('Email de verification envoye.');
+			setSuccess('Email de vérification envoyé.');
 		} catch (verificationError) {
 			setError(verificationError.message);
 		} finally {
@@ -80,10 +80,11 @@ export default function LoginForm({ onAuthenticated, onSwitchToRegister }) {
 	};
 
 	return (
-		<div className="rounded-2xl bg-neutral-50 p-5 shadow-[0_16px_40px_rgba(29,52,34,.10)] sm:p-8">
-			<div className="mb-7">
-				<p className="text-sm font-semibold uppercase tracking-wide text-primary-600">Connexion</p>
-				<h2 className="mt-2 text-2xl font-semibold text-secondary-900">Acceder a votre compte</h2>
+		<div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-5 sm:p-8">
+			<div className="mb-7 space-y-2">
+				<p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-600">Connexion</p>
+				<h2 className="font-title text-3xl font-semibold leading-tight text-secondary-900">Accéder à votre compte</h2>
+				<p className="text-sm text-secondary-600">Retrouvez vos commandes et vos favoris locaux.</p>
 			</div>
 
 			<form className="space-y-4" onSubmit={submit}>
@@ -110,7 +111,7 @@ export default function LoginForm({ onAuthenticated, onSwitchToRegister }) {
 					type="password"
 					value={form.password}
 				/>
-				<PrimaryButton type="submit" loading={loading}>
+				<PrimaryButton className="mt-1 h-12 w-full text-base" type="submit" loading={loading}>
 					Se connecter
 				</PrimaryButton>
 			</form>
@@ -123,9 +124,9 @@ export default function LoginForm({ onAuthenticated, onSwitchToRegister }) {
 				Renvoyer l'email de verification
 			</button>
 
-			<div className="my-5 flex items-center gap-3">
+			<div className="my-6 flex items-center gap-3">
 				<div className="h-px flex-1 bg-neutral-300" />
-				<span className="text-xs font-medium uppercase tracking-wide text-neutral-500">ou</span>
+				<span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-neutral-500">ou</span>
 				<div className="h-px flex-1 bg-neutral-300" />
 			</div>
 

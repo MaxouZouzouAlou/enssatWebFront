@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import shoppingCart from '../services/shoppingCart';
 
 export default function ProductCard({ product, onAdd = () => {} }) {
   const name = product.nom ?? product.name ?? product.title ?? 'Sans nom';
@@ -47,13 +46,11 @@ export default function ProductCard({ product, onAdd = () => {} }) {
         {product.unitaireOuKilo === 1 || product.unitaireOuKilo === true ? (
           <button
             onClick={async () => {
-              const id = product.idProduit ?? product.id ?? product._id;
               try {
-                await shoppingCart.addProductToShoppingCart(6, id, 1);
+                await onAdd(product, 1);
               } catch (err) {
                 console.error('Failed to add product to shopping cart', err);
               }
-              onAdd(product, 1);
             }}
             className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition text-sm"
           >
@@ -69,7 +66,6 @@ export default function ProductCard({ product, onAdd = () => {} }) {
 
 function KiloAdd({ product, onAdd }) {
   const [qty, setQty] = useState('0.1');
-  const id = product.idProduit ?? product.id ?? product._id;
   return (
     <div className="flex items-center gap-2">
       <input
@@ -84,11 +80,10 @@ function KiloAdd({ product, onAdd }) {
         onClick={async () => {
           const q = parseFloat(qty) || 0.1;
           try {
-            await shoppingCart.addProductToShoppingCart(6, id, q);
+            await onAdd(product, q);
           } catch (err) {
             console.error('Failed to add product to shopping cart', err);
           }
-          onAdd(product, q);
         }}
         className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition text-sm"
       >

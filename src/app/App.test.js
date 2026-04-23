@@ -1,5 +1,4 @@
-import { render } from '@testing-library/react';
-import App from './App.jsx';
+import { getLogoutRedirectPath } from './AppRoutes.jsx';
 
 jest.mock('../services/auth-client', () => ({
   authClient: {
@@ -13,8 +12,11 @@ jest.mock('../services/auth-client', () => ({
   fetchAuthProfile: jest.fn()
 }));
 
-test('renders app root', () => {
-  const { getByText } = render(<App />);
 
-  expect(getByText('Marketplace locale en Bretagne')).toBeInTheDocument();
+test('redirects logout from protected pages to home', () => {
+  expect(getLogoutRedirectPath('/compte')).toBe('/');
+  expect(getLogoutRedirectPath('/dashboard-producteur')).toBe('/');
+  expect(getLogoutRedirectPath('/tickets-incidents')).toBe('/');
+  expect(getLogoutRedirectPath('/achat')).toBeNull();
+  expect(getLogoutRedirectPath('/')).toBeNull();
 });

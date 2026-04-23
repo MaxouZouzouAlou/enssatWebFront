@@ -3,6 +3,7 @@ import { useId, useState } from 'react';
 export default function FormField({
   as = 'input',
   autoComplete,
+  className = '',
   children,
   error,
   help,
@@ -30,14 +31,14 @@ export default function FormField({
   const isPassword = type === 'password';
   const FieldComponent = as;
   const inputType = isPassword && toggleVisibility && isVisible ? 'text' : type;
-  const fieldClassName = `w-full rounded-xl bg-neutral-100 px-3 text-sm text-secondary-900 outline-none transition focus:ring-2 disabled:cursor-not-allowed disabled:bg-neutral-200 ${
+  const fieldClassName = `w-full rounded-xl border border-neutral-300 bg-neutral-100 px-4 text-sm text-secondary-900 outline-none transition focus:ring-2 disabled:cursor-not-allowed disabled:bg-neutral-200 ${
     as === 'textarea' ? 'min-h-28 resize-y py-2' : 'h-11'
   } ${
     toggleVisibility ? 'pr-11' : ''
   } ${
     error
-      ? 'ring-1 ring-red-300 focus:ring-red-100'
-      : 'focus:bg-neutral-50 focus:ring-primary-100'
+      ? 'border-red-300 ring-1 ring-red-200 focus:ring-red-100'
+      : 'focus:border-primary-300 focus:bg-neutral-50 focus:ring-primary-100'
   }`;
 
   const fieldProps = {
@@ -59,8 +60,8 @@ export default function FormField({
   };
 
   return (
-    <label className="block" htmlFor={inputId}>
-      <span className="mb-2 block text-sm font-medium text-secondary-700">{label}</span>
+    <label className={`block ${className}`} htmlFor={inputId}>
+      <span className="mb-2 block px-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-secondary-600">{label}</span>
       <span className="relative block">
         {as === 'input' ? (
           <input {...fieldProps} type={inputType} />
@@ -82,7 +83,7 @@ export default function FormField({
           </button>
         ) : null}
       </span>
-      {help ? <span className="mt-1 block text-xs text-neutral-500" id={helpId}>{help}</span> : null}
+      {help ? <span className="mt-1 block px-1 text-xs text-neutral-500" id={helpId}>{help}</span> : null}
       {error ? <span className="mt-1 block text-sm text-red-700" id={errorId}>{error}</span> : null}
     </label>
   );

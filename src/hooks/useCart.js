@@ -1,15 +1,43 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import shoppingCartService from '../services/shoppingCart';
 
-export default function useCart(initial = []) {
+function getProductId(product) {
+	return product?.idProduit ?? product?.id ?? product?._id ?? null;
+}
+
+function mapCartItem(item) {
+	return {
+		product: {
+			idProduit: item.idProduit,
+			id: item.idProduit,
+			nom: item.nomProduit ?? item.nom ?? item.name,
+			prix: item.prix ?? item.price,
+			nature: item.nature,
+			stock: item.stock,
+			bio: item.bio,
+			visible: item.visible,
+			unitaireOuKilo: item.unitaireOuKilo,
+			tva: item.tva,
+			reductionProfessionnel: item.reductionProfessionnel,
+			idProfessionnel: item.idProfessionnel,
+		},
+		quantity: Number(item.quantite ?? item.quantity ?? 1),
+	};
+}
+
+export default function useCart(profile = null, initial = []) {
 	const [cartItems, setCartItems] = useState(initial);
 	const [cartOpen, setCartOpen] = useState(false);
+	const [cartId, setCartId] = useState(6);
 
-	const addToCart = (product, quantite = 1) => {
+	const addToCart = async (product, quantite = 1) => {
 		const qty = Number(quantite) || 0;
 		if (qty <= 0) return;
-		setCartItems(prev => {
-			const matchIndex = prev.findIndex(item => (item.product.idProduit && product.idProduit && item.product.idProduit === product.idProduit) || (item.product.id && product.id && item.product.id === product.id) || (item.product._id && product._id && item.product._id === product._id));
+		const productId = getProductId(product);
+		if (!productId) return;
+		await shoppingCartService.addProductToShoppingCart(cartId, productId, qty);
+		setCartItems((prev) => {
+			const matchIndex = prev.findIndex((item) => getProductId(item.product) === productId);
 			if (matchIndex !== -1) {
 				const copy = [...prev];
 				copy[matchIndex] = { ...copy[matchIndex], quantity: copy[matchIndex].quantity + qty };
@@ -19,17 +47,35 @@ export default function useCart(initial = []) {
 		});
 	};
 
-	const removeFromCart = (productId) => {
-		setCartItems(prev => prev.filter(item => !(item.product.idProduit === productId || item.product.id === productId || item.product._id === productId)));
+	const removeFromCart = async (productId) => {
+		await shoppingCartService.removerProductsFromShoppingCart(cartId, productId);
+		setCartItems((prev) => prev.filter((item) => getProductId(item.product) !== productId));
 	};
 
-	const updateQuantity = (productId, qty) => {
-		setCartItems(prev => prev.map(item => {
-			if (item.product.idProduit === productId || item.product.id === productId || item.product._id === productId) {
-				return { ...item, quantity: qty };
+	const updateQuantity = async (productId, qty) => {
+		const nextQty = Number(qty) || 0;
+		const currentItem = cartItems.find((item) => getProductId(item.product) === productId);
+		if (!currentItem) return;
+
+		if (nextQty <= 0) {
+			await shoppingCartService.removerProductsFromShoppingCart(cartId, productId);
+			setCartItems((prev) => prev.filter((item) => getProductId(item.product) !== productId));
+			return;
+		}
+
+		const delta = nextQty - currentItem.quantity;
+		if (delta > 0) {
+			await shoppingCartService.addProductToShoppingCart(cartId, productId, delta);
+		} else if (delta < 0) {
+			await shoppingCartService.removeProductFromShoppingCart(cartId, productId, -delta);
+		}
+
+		setCartItems((prev) => prev.map((item) => {
+			if (getProductId(item.product) === productId) {
+				return { ...item, quantity: nextQty };
 			}
 			return item;
-		}).filter(item => item.quantity > 0));
+		}).filter((item) => item.quantity > 0));
 	};
 
 	// Count unique products (one per product), not total quantity
@@ -44,58 +90,36 @@ export default function useCart(initial = []) {
 		let mounted = true;
 		(async () => {
 			try {
-				// idPanier is currently fixed in API calls elsewhere; adjust if dynamic
-				const data = await shoppingCartService.getShoppingCartItems(6);
+				let resolvedCartId = 6;
+				if (profile) {
+					const currentCart = await shoppingCartService.getCurrentShoppingCart();
+					if (currentCart?.idPanier) {
+						resolvedCartId = currentCart.idPanier;
+					}
+				}
+
+				if (!mounted) return;
+				setCartId(resolvedCartId);
+
+				const data = await shoppingCartService.getShoppingCartItems(resolvedCartId);
 				if (!mounted) return;
 				if (Array.isArray(data)) {
-					// API returns items with fields like { idProduit, nomProduit, prix, quantite, ... }
-					setCartItems(data.map(it => ({
-						product: {
-							idProduit: it.idProduit,
-							id: it.idProduit,
-							nom: it.nomProduit ?? it.nom ?? it.name,
-							prix: it.prix ?? it.price,
-							nature: it.nature,
-							stock: it.stock,
-							bio: it.bio,
-							visible: it.visible,
-							unitaireOuKilo: it.unitaireOuKilo,
-							tva: it.tva,
-							reductionProfessionnel: it.reductionProfessionnel,
-							idProfessionnel: it.idProfessionnel,
-						},
-						quantity: Number(it.quantite ?? it.quantity ?? 1),
-					})));
+					setCartItems(data.map(mapCartItem));
 				} else if (data) {
-					setCartItems([{
-						product: {
-							idProduit: data.idProduit,
-							id: data.idProduit,
-							nom: data.nomProduit ?? data.nom ?? data.name,
-							prix: data.prix ?? data.price,
-							nature: data.nature,
-							stock: data.stock,
-							bio: data.bio,
-							visible: data.visible,
-							unitaireOuKilo: data.unitaireOuKilo,
-							tva: data.tva,
-							reductionProfessionnel: data.reductionProfessionnel,
-							idProfessionnel: data.idProfessionnel,
-						},
-						quantity: Number(data.quantite ?? data.quantity ?? 1),
-					}]);
+					setCartItems([mapCartItem(data)]);
 				}
 			} catch (err) {
 				console.warn('Failed to load shopping cart items', err);
 			}
 		})();
 		return () => { mounted = false; };
-	}, []);
+	}, [profile]);
 
 	return {
 		cartItems,
 		cartCount,
 		cartOpen,
+		cartId,
 		addToCart,
 		removeFromCart,
 		updateQuantity,

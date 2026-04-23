@@ -6,7 +6,7 @@ import SectionHeader from '../components/layout/SectionHeader.jsx';
 import SurfaceCard from '../components/layout/SurfaceCard.jsx';
 
 function PanierPage() {
-	const { cartItems } = useOutletContext();
+	const { cartItems, removeFromCart, updateQuantity } = useOutletContext();
 	const total = cartItems.reduce((s, it) => {
 		const priceRaw = it.product.prix ?? it.product.price;
 		const price = priceRaw != null && priceRaw !== '' ? Number(priceRaw) : 0;
@@ -28,6 +28,8 @@ function PanierPage() {
 							<CartItem
 								key={it.product.idProduit ?? it.product.id ?? it.product._id ?? idx}
 								item={it}
+								onRemove={removeFromCart}
+								onUpdate={updateQuantity}
 							/>
 						))}
 
