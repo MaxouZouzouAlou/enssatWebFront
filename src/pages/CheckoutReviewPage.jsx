@@ -32,7 +32,9 @@ export default function CheckoutReviewPage() {
 			modeLivraison: draft.modeLivraison,
 			modePaiement: draft.modePaiement,
 			relayId: draft.relayId,
-			pickupAssignments: draft.pickupAssignments
+			adresseLivraison: draft.adresseLivraison,
+			pickupAssignments: draft.pickupAssignments,
+			voucherId: draft.voucherId
 		})
 			.then((data) => {
 				if (!ignore) {
@@ -47,7 +49,7 @@ export default function CheckoutReviewPage() {
 		return () => {
 			ignore = true;
 		};
-	}, [draft.modeLivraison, draft.modePaiement, draft.pickupAssignments, draft.relayId]);
+	}, [draft.adresseLivraison, draft.modeLivraison, draft.modePaiement, draft.pickupAssignments, draft.relayId, draft.voucherId]);
 
 	if (!cartItems.length) {
 		return <Navigate to="/panier" replace />;
@@ -69,7 +71,9 @@ export default function CheckoutReviewPage() {
 				modeLivraison: draft.modeLivraison,
 				modePaiement: draft.modePaiement,
 				relayId: draft.relayId,
-				pickupAssignments: draft.pickupAssignments
+				adresseLivraison: draft.adresseLivraison,
+				pickupAssignments: draft.pickupAssignments,
+				voucherId: draft.voucherId
 			});
 			await Promise.all(
 				cartItems.map((item) => updateQuantity(item.product.idProduit ?? item.product.id, 0))
@@ -118,6 +122,11 @@ export default function CheckoutReviewPage() {
 						<div className="rounded-2xl border border-neutral-200 bg-[#fcfaf5] p-4">
 							<p className="text-sm font-semibold uppercase tracking-[0.1em] text-primary-700">Paiement</p>
 							<p className="mt-2 text-base font-semibold text-secondary-900">{preview?.modePaiementLabel || draft.modePaiement}</p>
+							{preview?.appliedVoucher ? (
+								<p className="mt-1 text-sm text-secondary-600">
+									Bon appliqué : {preview.appliedVoucher.codeBon} (-{Number(preview.appliedVoucher.valeurEuros || 0).toFixed(2)} €)
+								</p>
+							) : null}
 						</div>
 
 						{preview?.items?.some((item) => item.selectedLieu) ? (

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import AddressAutocompleteInput from '../address/AddressAutocompleteInput.jsx';
 import {
 	attachCompanySalesPoint,
 	createCompanySalesPoint,
@@ -134,6 +135,15 @@ export default function CompanySalesPointsManager({ professionalId, selectedComp
 		}
 	};
 
+	const selectSuggestedSalesPointAddress = (suggestion) => {
+		setNewSalesPoint((current) => ({
+			...current,
+			adresse_ligne: suggestion.adresse_ligne,
+			code_postal: suggestion.code_postal,
+			ville: suggestion.ville
+		}));
+	};
+
 	if (!selectedCompany?.id) return null;
 
 	return (
@@ -232,11 +242,12 @@ export default function CompanySalesPointsManager({ professionalId, selectedComp
 								value={newSalesPoint.horaires}
 								onChange={(event) => setNewSalesPoint((current) => ({ ...current, horaires: event.target.value }))}
 							/>
-							<input
+							<AddressAutocompleteInput
 								className="h-11 rounded-xl border border-neutral-300 bg-white px-3 text-sm text-secondary-800"
 								placeholder="Adresse"
 								value={newSalesPoint.adresse_ligne}
-								onChange={(event) => setNewSalesPoint((current) => ({ ...current, adresse_ligne: event.target.value }))}
+								onAddressChange={(nextValue) => setNewSalesPoint((current) => ({ ...current, adresse_ligne: nextValue }))}
+								onSuggestionSelect={selectSuggestedSalesPointAddress}
 							/>
 							<div className="grid gap-3 sm:grid-cols-2">
 								<input

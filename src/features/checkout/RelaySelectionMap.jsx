@@ -1,0 +1,49 @@
+import L from 'leaflet';
+import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+
+L.Icon.Default.mergeOptions({
+	iconRetinaUrl: markerIcon2x,
+	iconUrl: markerIcon,
+	shadowUrl: markerShadow,
+});
+
+function formatAddress(address) {
+	if (!address) return '';
+	return [address.ligne, address.codePostal, address.ville].filter(Boolean).join(', ');
+}
+
+export default function RelaySelectionMap({ relay }) {
+	const latitude = Number(relay?.coordinates?.latitude);
+	const longitude = Number(relay?.coordinates?.longitude);
+
+	if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+
+	return (
+		<div className="overflow-hidden rounded-2xl border border-neutral-200">
+			<div className="h-[260px] w-full">
+				<MapContainer
+					key={`${latitude}-${longitude}`}
+					center={[latitude, longitude]}
+					zoom={14}
+					scrollWheelZoom
+					className="h-full w-full"
+				>
+					<TileLayer
+						attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+						url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+					/>
+					<Marker position={[latitude, longitude]}>
+						<Popup>
+							<p className="font-semibold">{relay.nom}</p>
+							<p className="text-sm">{formatAddress(relay.adresse)}</p>
+						</Popup>
+					</Marker>
+				</MapContainer>
+			</div>
+		</div>
+	);
+}

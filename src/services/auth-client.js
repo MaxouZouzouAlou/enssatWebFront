@@ -10,6 +10,22 @@ export const authClient = createAuthClient({
 	}
 });
 
+async function parseJsonResponse(response, defaultMessage) {
+	const text = await response.text();
+	let data = {};
+	try {
+		data = text ? JSON.parse(text) : {};
+	} catch {
+		data = {};
+	}
+
+	if (!response.ok) {
+		throw new Error(data.error || data.message || text || defaultMessage);
+	}
+
+	return data;
+}
+
 export async function registerAccount(payload) {
 	const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
 		method: 'POST',
@@ -20,29 +36,20 @@ export async function registerAccount(payload) {
 		body: JSON.stringify(payload)
 	});
 
-	const data = await response.json().catch(() => ({}));
-	if (!response.ok) {
-		throw new Error(data.error || 'Inscription impossible.');
-	}
-	return data;
+	return parseJsonResponse(response, 'Inscription impossible.');
 }
 
 export async function fetchAuthProfile() {
-	const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+	const response = await fetch(`${API_BASE_URL}/api/account/profile`, {
 		credentials: 'include'
 	});
 
 	if (response.status === 401) return null;
-
-	const data = await response.json().catch(() => ({}));
-	if (!response.ok) {
-		throw new Error(data.error || 'Impossible de recuperer le profil.');
-	}
-	return data;
+	return parseJsonResponse(response, 'Impossible de recuperer le profil.');
 }
 
 export async function updatePersonalAddress(payload) {
-	const response = await fetch(`${API_BASE_URL}/api/auth/profile/address`, {
+	const response = await fetch(`${API_BASE_URL}/api/account/profile/address`, {
 		method: 'PUT',
 		headers: {
 			'Content-Type': 'application/json'
@@ -51,15 +58,11 @@ export async function updatePersonalAddress(payload) {
 		body: JSON.stringify(payload)
 	});
 
-	const data = await response.json().catch(() => ({}));
-	if (!response.ok) {
-		throw new Error(data.error || 'Impossible de mettre a jour votre adresse.');
-	}
-	return data;
+	return parseJsonResponse(response, 'Impossible de mettre a jour votre adresse.');
 }
 
 export async function updatePersonalProfile(payload) {
-	const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+	const response = await fetch(`${API_BASE_URL}/api/account/profile`, {
 		method: 'PUT',
 		headers: {
 			'Content-Type': 'application/json'
@@ -68,24 +71,29 @@ export async function updatePersonalProfile(payload) {
 		body: JSON.stringify(payload)
 	});
 
-	const data = await response.json().catch(() => ({}));
-	if (!response.ok) {
-		throw new Error(data.error || 'Impossible de mettre a jour votre profil.');
-	}
-	return data;
+	return parseJsonResponse(response, 'Impossible de mettre a jour votre profil.');
+}
+
+export async function requestEmailChange(payload) {
+	const response = await fetch(`${API_BASE_URL}/api/account/profile/change-email`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		credentials: 'include',
+		body: JSON.stringify(payload)
+	});
+
+	return parseJsonResponse(response, "Impossible d'initialiser le changement d'email.");
 }
 
 export async function deletePersonalAccount() {
-	const response = await fetch(`${API_BASE_URL}/api/auth/profile`, {
+	const response = await fetch(`${API_BASE_URL}/api/account/profile`, {
 		method: 'DELETE',
 		credentials: 'include'
 	});
 
-	const data = await response.json().catch(() => ({}));
-	if (!response.ok) {
-		throw new Error(data.error || 'Impossible de supprimer votre compte.');
-	}
-	return data;
+	return parseJsonResponse(response, 'Impossible de supprimer votre compte.');
 }
 
 export async function requestPasswordReset(email) {

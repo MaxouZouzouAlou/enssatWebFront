@@ -31,6 +31,17 @@ function formatAddress(stop) {
 	return [stop.adresse.ligne, stop.adresse.codePostal, stop.adresse.ville].filter(Boolean).join(', ');
 }
 
+const PAYMENT_LABELS = {
+	carte_bancaire: 'Carte bancaire',
+	paypal: 'PayPal',
+	apple_pay: 'Apple Pay'
+};
+
+function formatPaymentLabel(modePaiement) {
+	if (PAYMENT_LABELS[modePaiement]) return PAYMENT_LABELS[modePaiement];
+	return modePaiement || 'Non renseigné';
+}
+
 export default function OrderDetailPage() {
 	const navigate = useNavigate();
 	const { idCommande } = useParams();
@@ -96,7 +107,7 @@ export default function OrderDetailPage() {
 						<p className="text-xs font-semibold uppercase tracking-[0.12em] text-primary-700">Récapitulatif</p>
 						<p className="mt-2 text-lg font-semibold text-secondary-900">{formatDate(order.dateCommande)}</p>
 						<p className="mt-1 text-sm text-secondary-600">{order.modeLivraison || 'Mode de livraison non renseigné'}</p>
-						<p className="mt-1 text-sm text-secondary-600">Paiement : {order.modePaiement || 'Non renseigné'}</p>
+						<p className="mt-1 text-sm text-secondary-600">Paiement : {formatPaymentLabel(order.modePaiement)}</p>
 						<p className="mt-1 text-sm text-secondary-600">Statut : {order.status}</p>
 					</div>
 					<div className="flex flex-col items-start gap-3 sm:items-end">

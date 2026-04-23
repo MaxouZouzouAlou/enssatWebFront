@@ -26,7 +26,7 @@ export async function claimLoyaltyChallenge(code) {
   return parseResponse(response, 'Impossible de valider le defi.');
 }
 
-export async function redeemVoucher(pointsToSpend = 500) {
+export async function redeemVoucher(pointsToSpend = 1000) {
   const response = await fetch(`${API_BASE_URL}/loyalty/redeem-voucher`, {
     method: 'POST',
     credentials: 'include',

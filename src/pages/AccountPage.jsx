@@ -1,29 +1,34 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { ActionButton } from '../components/Button.jsx';
+import AddressAutocompleteInput from '../features/address/AddressAutocompleteInput.jsx';
 import PageShell from '../components/layout/PageShell.jsx';
 import SectionHeader from '../components/layout/SectionHeader.jsx';
 import SoftPanel from '../components/layout/SoftPanel.jsx';
 import SurfaceCard from '../components/layout/SurfaceCard.jsx';
-import { authClient, deletePersonalAccount, updatePersonalProfile } from '../services/auth-client.js';
+import { authClient, deletePersonalAccount, requestEmailChange, updatePersonalProfile } from '../services/auth-client.js';
 
 function formatAddress(data) {
 	if (!data) return '';
 	return [data.adresse_ligne, data.code_postal, data.ville].filter(Boolean).join(', ');
 }
 
-function EditableField({ label, value, name, editing, onChange, placeholder = '' }) {
+function EditableField({ label, value, name, editing, onChange, placeholder = '', inputRenderer = null }) {
 	return (
 		<label className="block text-sm font-semibold text-secondary-900">
 			{label}
 			{editing ? (
-				<input
-					name={name}
-					value={value}
-					onChange={onChange}
-					className="mt-2 h-11 w-full rounded-xl border border-neutral-300 bg-white px-4 text-sm"
-					placeholder={placeholder}
-				/>
+				inputRenderer ? (
+					inputRenderer()
+				) : (
+					<input
+						name={name}
+						value={value}
+						onChange={onChange}
+						className="mt-2 h-11 w-full rounded-xl border border-neutral-300 bg-white px-4 text-sm"
+						placeholder={placeholder}
+					/>
+				)
 			) : (
 				<p className="mt-2 rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm font-medium text-secondary-800">
 					{value || 'Non renseigné'}
@@ -43,7 +48,6 @@ function PasswordBlock() {
 	const update = (field) => (event) => {
 		setForm((current) => ({ ...current, [field]: event.target.value }));
 	};
-
 	const toggleVisibility = (field) => {
 		setVisibility((current) => ({ ...current, [field]: !current[field] }));
 	};
@@ -189,12 +193,70 @@ function DeleteAccountModal({ open, loading, onCancel, onConfirm }) {
 					<ActionButton type="button" variant="light" onClick={onCancel} className="h-10">
 						Annuler
 					</ActionButton>
-					<ActionButton type="button" loading={loading} onClick={onConfirm} className="h-10 bg-red-600 hover:bg-red-700 focus-visible:ring-red-500">
+					<ActionButton type="button" loading={loading} onClick={onConfirm} variant="danger" className="h-10">
 						Supprimer définitivement
 					</ActionButton>
 				</div>
 			</div>
 		</div>
+	);
+}
+
+function EmailChangePanel({ currentEmail, onEmailChangeRequested }) {
+	const [newEmail, setNewEmail] = useState('');
+	const [loading, setLoading] = useState(false);
+	const [error, setError] = useState('');
+	const [success, setSuccess] = useState('');
+
+	const submit = async (event) => {
+		event.preventDefault();
+		setLoading(true);
+		setError('');
+		setSuccess('');
+		try {
+			const result = await requestEmailChange({ newEmail });
+			setSuccess(result.message || 'Un email de verification a ete envoye a votre nouvelle adresse.');
+			setNewEmail('');
+			await onEmailChangeRequested?.();
+		} catch (submitError) {
+			setError(submitError.message || "Impossible d'initialiser le changement d'email.");
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	return (
+		<SoftPanel className="mt-6 p-5">
+			<p className="text-xs font-semibold uppercase tracking-[0.12em] text-primary-700">Email</p>
+			<h3 className="mt-2 text-xl font-semibold text-secondary-900">Changer d'adresse email</h3>
+			<p className="mt-2 text-sm text-secondary-600">
+				L'email n'est pas modifie immediatement. Un lien de verification est envoye a la nouvelle adresse avant toute mise a jour.
+			</p>
+			<div className="mt-4 rounded-2xl border border-neutral-200 bg-white px-4 py-3">
+				<p className="text-xs font-semibold uppercase tracking-[0.08em] text-neutral-500">Adresse actuelle</p>
+				<p className="mt-1 text-sm font-medium text-secondary-800">{currentEmail || 'Non renseigne'}</p>
+			</div>
+			{error ? <p className="mt-4 text-sm font-semibold text-red-700">{error}</p> : null}
+			{success ? <p className="mt-4 text-sm font-semibold text-primary-700">{success}</p> : null}
+			<form className="mt-5 grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto]" onSubmit={submit}>
+				<label className="block text-sm font-semibold text-secondary-900">
+					Nouvelle adresse email
+					<input
+						type="email"
+						value={newEmail}
+						onChange={(event) => setNewEmail(event.target.value)}
+						className="mt-2 h-11 w-full rounded-xl border border-neutral-300 bg-white px-4 text-sm"
+						placeholder="nouvelle.adresse@email.fr"
+						required
+					/>
+				</label>
+				<div className="sm:self-end">
+					<ActionButton type="submit" loading={loading} className="h-11">
+						Envoyer le mail
+					</ActionButton>
+				</div>
+			</form>
+		</SoftPanel>
 	);
 }
 
@@ -225,7 +287,7 @@ export default function AccountPage({
 	const [form, setForm] = useState({
 		nom: profile?.user?.nom || '',
 		prenom: profile?.user?.prenom || '',
-		email: profileData?.email || user?.email || '',
+		email: profile?.user?.email || user?.email || '',
 		num_telephone: profileData?.num_telephone || '',
 		adresse_ligne: profileData?.adresse_ligne || '',
 		code_postal: profileData?.code_postal || '',
@@ -236,17 +298,26 @@ export default function AccountPage({
 		setForm({
 			nom: profile?.user?.nom || '',
 			prenom: profile?.user?.prenom || '',
-			email: profileData?.email || user?.email || '',
+			email: profile?.user?.email || user?.email || '',
 			num_telephone: profileData?.num_telephone || '',
 			adresse_ligne: profileData?.adresse_ligne || '',
 			code_postal: profileData?.code_postal || '',
 			ville: profileData?.ville || ''
 		});
-	}, [profile?.user?.nom, profile?.user?.prenom, profileData?.email, profileData?.num_telephone, profileData?.adresse_ligne, profileData?.code_postal, profileData?.ville, user?.email]);
+	}, [profile?.user?.nom, profile?.user?.prenom, profile?.user?.email, profileData?.num_telephone, profileData?.adresse_ligne, profileData?.code_postal, profileData?.ville, user?.email]);
 
 	const onFieldChange = (event) => {
 		const { name, value } = event.target;
 		setForm((current) => ({ ...current, [name]: value }));
+	};
+
+	const onSelectSuggestedAddress = (suggestion) => {
+		setForm((current) => ({
+			...current,
+			adresse_ligne: suggestion.adresse_ligne,
+			code_postal: suggestion.code_postal,
+			ville: suggestion.ville
+		}));
 	};
 
 	const onSaveProfile = async () => {
@@ -254,7 +325,14 @@ export default function AccountPage({
 		setSaveError('');
 		setSaveSuccess('');
 		try {
-			await updatePersonalProfile(form);
+			await updatePersonalProfile({
+				nom: form.nom,
+				prenom: form.prenom,
+				num_telephone: form.num_telephone,
+				adresse_ligne: form.adresse_ligne,
+				code_postal: form.code_postal,
+				ville: form.ville
+			});
 			await onProfileRefresh?.();
 			setEditing(false);
 			setSaveSuccess('Profil mis à jour.');
@@ -272,7 +350,7 @@ export default function AccountPage({
 		setForm({
 			nom: profile?.user?.nom || '',
 			prenom: profile?.user?.prenom || '',
-			email: profileData?.email || user?.email || '',
+			email: profile?.user?.email || user?.email || '',
 			num_telephone: profileData?.num_telephone || '',
 			adresse_ligne: profileData?.adresse_ligne || '',
 			code_postal: profileData?.code_postal || '',
@@ -361,7 +439,7 @@ export default function AccountPage({
 									</ActionButton>
 								</>
 							) : (
-								<ActionButton type="button" variant="secondary" onClick={() => setEditing(true)} className="h-10">
+								<ActionButton type="button" onClick={() => setEditing(true)} className="h-10">
 									Modifier
 								</ActionButton>
 							)}
@@ -374,13 +452,31 @@ export default function AccountPage({
 					<div className="mt-5 grid gap-4 sm:grid-cols-2">
 						<EditableField label="Nom" name="nom" value={form.nom} editing={editing} onChange={onFieldChange} />
 						<EditableField label="Prénom" name="prenom" value={form.prenom} editing={editing} onChange={onFieldChange} />
-						<EditableField label="Email" name="email" value={form.email} editing={editing} onChange={onFieldChange} />
+						<EditableField label="Email" name="email" value={form.email} editing={false} onChange={onFieldChange} />
 						<EditableField label="Téléphone" name="num_telephone" value={form.num_telephone} editing={editing} onChange={onFieldChange} />
-						<EditableField label="Adresse" name="adresse_ligne" value={form.adresse_ligne} editing={editing} onChange={onFieldChange} />
+						<EditableField
+							label="Adresse"
+							name="adresse_ligne"
+							value={form.adresse_ligne}
+							editing={editing}
+							onChange={onFieldChange}
+							placeholder="12 rue des Producteurs"
+							inputRenderer={() => (
+								<AddressAutocompleteInput
+									value={form.adresse_ligne}
+									onAddressChange={(nextValue) => setForm((current) => ({ ...current, adresse_ligne: nextValue }))}
+									onSuggestionSelect={onSelectSuggestedAddress}
+									className="mt-2 h-11 w-full rounded-xl border border-neutral-300 bg-white px-4 text-sm"
+									placeholder="12 rue des Producteurs"
+								/>
+							)}
+						/>
 						<EditableField label="Code postal" name="code_postal" value={form.code_postal} editing={editing} onChange={onFieldChange} />
 						<EditableField label="Ville" name="ville" value={form.ville} editing={editing} onChange={onFieldChange} />
 					</div>
 				</SoftPanel>
+
+				<EmailChangePanel currentEmail={form.email} onEmailChangeRequested={onProfileRefresh} />
 
 				<PasswordBlock />
 
@@ -409,18 +505,10 @@ export default function AccountPage({
 				) : null}
 
 				<div className="mt-8 flex flex-col gap-3 sm:flex-row">
-					<ActionButton
-						type="button"
-						onClick={signOut}
-						variant='danger'
-					>
+					<ActionButton type="button" onClick={signOut} variant="danger">
 						Se déconnecter
 					</ActionButton>
-					<ActionButton
-						type="button"
-						onClick={() => setShowDeleteModal(true)}
-						variant='danger'
-					>
+					<ActionButton type="button" onClick={() => setShowDeleteModal(true)} variant="danger">
 						Supprimer son compte
 					</ActionButton>
 				</div>
