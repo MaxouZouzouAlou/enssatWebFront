@@ -1,7 +1,7 @@
 import React from 'react';
 import ProductCard from './ProductCard';
 
-export default function ProductGrid({ products = [], addToCart = () => {}, onOpenReviews = () => {}, onOpenProduct = () => {} }) {
+export default function ProductGrid({ products = [], addToCart = () => {}, onOpenProduct = () => {} }) {
   const visibleProducts = (products || []).filter(
     (p) => !(p.visible === 0 || p.visible === '0' || p.visible === false)
   );
@@ -14,7 +14,6 @@ export default function ProductGrid({ products = [], addToCart = () => {}, onOpe
             key={p.idProduit ?? p.id ?? p._id ?? idx}
             product={p}
             onAdd={addToCart}
-            onOpenReviews={onOpenReviews}
             onOpenProduct={onOpenProduct}
           />
         ))

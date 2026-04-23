@@ -3,11 +3,13 @@ import Alert from '../../components/Alert.jsx';
 import { PrimaryButton, SecondaryButton } from '../../components/Button.jsx';
 import FormField from '../../components/FormField.jsx';
 import { GOOGLE_AUTH_ENABLED, authClient, requestPasswordReset } from '../../services/auth-client';
+import { useToast } from '../../app/ToastProvider.jsx';
 import { hasErrors, validateLoginForm } from './validation';
 
 const LOGIN_DRAFT_KEY = 'login-draft';
 
 export default function LoginForm({ onAuthenticated, onSwitchToRegister }) {
+	const toast = useToast();
 	const [form, setForm] = useState(() => {
 		const saved = window.sessionStorage.getItem(LOGIN_DRAFT_KEY);
 		return saved ? { ...JSON.parse(saved), password: '' } : { email: '', password: '' };
@@ -41,6 +43,7 @@ export default function LoginForm({ onAuthenticated, onSwitchToRegister }) {
 		if (hasErrors(nextFieldErrors)) {
 			setLoading(false);
 			setError('Corrigez les champs indiques.');
+			toast.showError('Corrigez les champs indiques.');
 			return;
 		}
 
@@ -51,11 +54,14 @@ export default function LoginForm({ onAuthenticated, onSwitchToRegister }) {
 
 		setLoading(false);
 		if (authError) {
-			setError(authError.message || 'Email ou mot de passe invalide.');
+			const message = authError.message || 'Email ou mot de passe invalide.';
+			setError(message);
+			toast.showError(message);
 			return;
 		}
 
 		window.sessionStorage.removeItem(LOGIN_DRAFT_KEY);
+		toast.showSuccess('Connexion reussie.');
 		onAuthenticated?.();
 	};
 
@@ -70,7 +76,9 @@ export default function LoginForm({ onAuthenticated, onSwitchToRegister }) {
 		});
 		if (authError) {
 			setGoogleLoading(false);
-			setError(authError.message || 'Connexion Google indisponible.');
+			const message = authError.message || 'Connexion Google indisponible.';
+			setError(message);
+			toast.showError(message);
 		}
 	};
 
@@ -83,10 +91,12 @@ export default function LoginForm({ onAuthenticated, onSwitchToRegister }) {
 		try {
 			await requestPasswordReset(forgotEmail);
 			setSuccess('Si ce compte existe, un email de réinitialisation a été envoyé.');
+			toast.showSuccess('Si ce compte existe, un email de réinitialisation a été envoyé.');
 			setShowForgot(false);
 			setForgotEmail('');
 		} catch (err) {
 			setError(err.message);
+			toast.showError(err.message || "Impossible d'envoyer le lien de réinitialisation.");
 		} finally {
 			setForgotLoading(false);
 		}

@@ -41,6 +41,25 @@ test('keeps action buttons from triggering the product click', () => {
 	expect(onOpenProduct).not.toHaveBeenCalled();
 });
 
+test('keeps quantity controls from triggering the product click', () => {
+	const onOpenProduct = jest.fn();
+	const product = {
+		idProduit: 42,
+		nom: 'Pommes',
+		prix: 2.5,
+		nature: 'Fruit',
+		visible: true,
+		stock: 10,
+		idProfessionnel: 7,
+	};
+
+	render(<ProductCard product={product} onOpenProduct={onOpenProduct} />);
+
+	fireEvent.click(screen.getByLabelText(/augmenter quantite/i));
+
+	expect(onOpenProduct).not.toHaveBeenCalled();
+});
+
 test('renders backend image paths as absolute API URLs', () => {
 	const product = {
 		idProduit: 99,

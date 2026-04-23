@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import RegisterForm from './RegisterForm.jsx';
 import { registerAccount } from '../../services/auth-client';
+import { ToastProvider } from '../../app/ToastProvider.jsx';
 
 jest.mock('../../services/auth-client', () => ({
 	authClient: {
@@ -16,20 +17,28 @@ beforeEach(() => {
 	window.sessionStorage.clear();
 });
 
+function renderRegisterForm(props = {}) {
+	return render(
+		<ToastProvider>
+			<RegisterForm onSwitchToLogin={jest.fn()} {...props} />
+		</ToastProvider>
+	);
+}
+
 test('shows application validation errors for missing passwords', () => {
-	render(<RegisterForm onSwitchToLogin={jest.fn()} />);
+	renderRegisterForm();
 
 	fireEvent.click(screen.getByRole('button', { name: /^créer le compte$/i }));
 
 	expect(screen.getByText('Mot de passe requis.')).toBeInTheDocument();
 	expect(screen.getByText('Confirmation requise.')).toBeInTheDocument();
-	expect(screen.getByText('Corrigez les champs indiques.')).toBeInTheDocument();
+	expect(screen.getAllByText('Corrigez les champs indiques.')).toHaveLength(2);
 	expect(registerAccount).not.toHaveBeenCalled();
 });
 
 test('submits a normalized registration payload', async () => {
 	registerAccount.mockResolvedValueOnce({});
-	render(<RegisterForm onSwitchToLogin={jest.fn()} />);
+	renderRegisterForm();
 
 	fireEvent.change(screen.getByLabelText('Prenom'), { target: { value: '  Alice  ' } });
 	fireEvent.change(screen.getByLabelText('Nom'), { target: { value: '  Martin  ' } });
@@ -52,7 +61,7 @@ test('submits a normalized registration payload', async () => {
 test('restores the verification step from session storage', () => {
 	window.sessionStorage.setItem('register-verification-email', 'alice@example.com');
 
-	render(<RegisterForm onSwitchToLogin={jest.fn()} />);
+	renderRegisterForm();
 
 	expect(screen.getByRole('heading', { name: /v.rifiez votre email/i })).toBeInTheDocument();
 	expect(screen.getByText(/alice@example\.com/i)).toBeInTheDocument();
@@ -62,7 +71,7 @@ test('clears the stored verification state when returning to login', () => {
 	const onSwitchToLogin = jest.fn();
 	window.sessionStorage.setItem('register-verification-email', 'alice@example.com');
 
-	render(<RegisterForm onSwitchToLogin={onSwitchToLogin} />);
+	renderRegisterForm({ onSwitchToLogin });
 
 	fireEvent.click(screen.getByRole('button', { name: /retour . la connexion/i }));
 

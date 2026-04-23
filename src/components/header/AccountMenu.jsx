@@ -3,10 +3,9 @@ import { ActionButton } from '../Button.jsx';
 
 const commonAuthenticatedItems = [
 	{ icon: 'person', label: 'Mon compte', path: '/compte' },
-	{ icon: 'receipt_long', label: 'Mes commandes', path: '/commandes' },
 ];
 
-export default function AccountMenu({ isAuthenticated, isProfessional, onClose, onSignOut }) {
+export default function AccountMenu({ isAuthenticated, isProfessional, isSuperAdmin = false, onClose, onSignOut }) {
 	const navigate = useNavigate();
 
 	const goTo = (path) => {
@@ -41,7 +40,12 @@ export default function AccountMenu({ isAuthenticated, isProfessional, onClose, 
 
 	const items = [
 		...commonAuthenticatedItems,
-		...(isProfessional ? [] : [{ icon: 'workspace_premium', label: 'Ma fidélité', path: '/fidelite' }]),
+		...(isSuperAdmin ? [
+			{ icon: 'admin_panel_settings', label: 'Administration', path: '/superadmin' },
+			{ icon: 'support_agent', label: 'Tickets incidents', path: '/tickets-incidents' },
+		] : []),
+		...(!isSuperAdmin ? [{ icon: 'receipt_long', label: 'Mes commandes', path: '/commandes' }] : []),
+		...(!isProfessional && !isSuperAdmin ? [{ icon: 'workspace_premium', label: 'Ma fidélité', path: '/fidelite' }] : []),
 		...(isProfessional ? [{ icon: 'monitoring', label: 'Espace pro', path: '/espace-pro' }] : [])
 	];
 

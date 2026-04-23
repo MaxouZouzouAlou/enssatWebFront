@@ -14,7 +14,7 @@ export async function fetchProfessionalDashboard(idProfessionnel, idEntreprise =
 
 	const data = await response.json().catch(() => ({}));
 	if (!response.ok) {
-		throw new Error(data.error || 'Impossible de recuperer le dashboard professionnel.');
+		throw new Error(data.error || 'Impossible de récupérer le dashboard professionnel.');
 	}
 	return data;
 }
@@ -62,7 +62,7 @@ export async function downloadProfessionalSalesReport(idProfessionnel, days = 90
 
 	if (!response.ok) {
 		const data = await response.json().catch(() => ({}));
-		throw new Error(data.error || 'Impossible de telecharger le rapport de ventes.');
+		throw new Error(data.error || 'Impossible de télécharger le rapport de ventes.');
 	}
 
 	const blob = await response.blob();
@@ -81,7 +81,7 @@ export async function downloadOrderInvoice(idProfessionnel, idCommande, idEntrep
 
 	if (!response.ok) {
 		const data = await response.json().catch(() => ({}));
-		throw new Error(data.error || 'Impossible de telecharger la facture.');
+		throw new Error(data.error || 'Impossible de télécharger la facture.');
 	}
 
 	const blob = await response.blob();

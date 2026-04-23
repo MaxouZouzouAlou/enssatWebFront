@@ -34,7 +34,7 @@ export default function IncidentDetail({
 	if (!detail?.ticket) {
 		return (
 			<SurfaceCard as="section" className="col-span-12 p-4 text-sm text-neutral-600">
-				Selectionnez un ticket pour consulter son historique et les reponses.
+				Sélectionnez un ticket pour consulter son historique et les réponses.
 			</SurfaceCard>
 		);
 	}
@@ -78,7 +78,7 @@ export default function IncidentDetail({
 								<p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-secondary-800">{response.message}</p>
 							</SoftPanel>
 						)) : (
-							<p className="text-sm text-neutral-600">Aucune reponse pour le moment.</p>
+							<p className="text-sm text-neutral-600">Aucune réponse pour le moment.</p>
 						)}
 					</div>
 
@@ -98,7 +98,7 @@ export default function IncidentDetail({
 								type="submit"
 								disabled={mutationLoading}
 							>
-								{mutationLoading ? 'Envoi...' : 'Envoyer la reponse'}
+								{mutationLoading ? 'Envoi...' : 'Envoyer la réponse'}
 							</ActionButton>
 						</form>
 					) : null}
@@ -145,7 +145,7 @@ export default function IncidentDetail({
 								disabled={mutationLoading || status === ticket.status}
 								variant="secondary"
 							>
-								{mutationLoading ? 'Mise a jour...' : 'Mettre a jour'}
+								{mutationLoading ? 'Mise à jour...' : 'Mettre à jour'}
 							</ActionButton>
 						</form>
 					) : null}

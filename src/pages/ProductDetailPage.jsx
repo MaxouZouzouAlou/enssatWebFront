@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useOutletContext, useParams } from 'react-router';
-import { ActionButton } from '../components/Button.jsx';
+import { ActionButton, ActionLink } from '../components/Button.jsx';
 import PageShell from '../components/layout/PageShell.jsx';
 import SectionHeader from '../components/layout/SectionHeader.jsx';
 import SurfaceCard from '../components/layout/SurfaceCard.jsx';
 import productsService from '../services/products';
 import { fetchProductReviews, postProductReview } from '../services/reviews-client.js';
 import { formatProductStock, isUnitProduct } from '../utils/cartQuantity.js';
+import { useToast } from '../app/ToastProvider.jsx';
+import { queryKeys } from '../utils/queryKeys.js';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:49161';
 
@@ -59,14 +62,11 @@ function getCompanyName(product) {
 
 function ProductDetailPage() {
 	const { addToCart, isAuthenticated, accountType, profile } = useOutletContext();
+	const toast = useToast();
+	const queryClient = useQueryClient();
 	const navigate = useNavigate();
 	const { idProduit } = useParams();
-	const [product, setProduct] = useState(null);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState('');
 	const [quantity, setQuantity] = useState(1);
-	const [reviewsData, setReviewsData] = useState({ summary: null, reviews: [] });
-	const [reviewsLoading, setReviewsLoading] = useState(false);
 	const [reviewsError, setReviewsError] = useState('');
 	const [reviewMessage, setReviewMessage] = useState('');
 	const [reviewForm, setReviewForm] = useState({ note: 5, commentaire: '' });
@@ -74,78 +74,67 @@ function ProductDetailPage() {
 	const [imageError, setImageError] = useState(false);
 	const canReview = isAuthenticated && accountType === 'particulier';
 
+	const {
+		data: product,
+		error: productError,
+		isLoading: productLoading,
+	} = useQuery({
+		queryKey: queryKeys.products.detail(idProduit),
+		queryFn: () => productsService.getProductById(idProduit),
+		enabled: Boolean(idProduit),
+	});
+	const {
+		data: reviewsPayload,
+		error: reviewsQueryError,
+		isLoading: reviewsLoading,
+	} = useQuery({
+		queryKey: queryKeys.reviews.product(idProduit),
+		queryFn: () => fetchProductReviews(idProduit),
+		enabled: Boolean(idProduit),
+	});
+
+	useEffect(() => {
+		if (product) {
+			setQuantity(isUnitProduct(product) ? 1 : 1);
+		}
+	}, [product]);
+
+	useEffect(() => {
+		setReviewsError(reviewsQueryError?.message || '');
+	}, [reviewsQueryError]);
+
+	const reviewsData = {
+		summary: reviewsPayload?.summary || null,
+		reviews: Array.isArray(reviewsPayload?.reviews) ? reviewsPayload.reviews : [],
+	};
 	const imageUrl = resolveProductImageUrl(product?.imagePath ?? product?.image ?? product?.path ?? product?.imageUrl ?? null);
 
 	useEffect(() => {
 		setImageError(false);
 	}, [imageUrl]);
 
-	useEffect(() => {
-		let mounted = true;
+	const reviewMutation = useMutation({
+		mutationFn: (payload) => postProductReview(idProduit, payload),
+		onSuccess: async () => {
+			await Promise.all([
+				queryClient.invalidateQueries({ queryKey: queryKeys.reviews.product(idProduit) }),
+				queryClient.invalidateQueries({ queryKey: queryKeys.products.detail(idProduit) }),
+				queryClient.invalidateQueries({ queryKey: queryKeys.products.all }),
+			]);
+		},
+	});
 
-		if (!idProduit) {
-			setError('Identifiant produit manquant.');
-			setLoading(false);
-			return () => {
-				mounted = false;
-			};
-		}
+	if (!idProduit) {
+		return (
+			<PageShell contentClassName="flex min-h-[50vh] items-center justify-center">
+				<SurfaceCard className="max-w-xl text-center">
+					<p className="text-sm font-semibold text-red-700">Erreur : Identifiant produit manquant.</p>
+				</SurfaceCard>
+			</PageShell>
+		);
+	}
 
-		setLoading(true);
-		setError('');
-		setProduct(null);
-
-		productsService
-			.getProductById(idProduit)
-			.then((data) => {
-				if (!mounted) return;
-				setProduct(data);
-				setQuantity(isUnitProduct(data) ? 1 : 1);
-			})
-			.catch((err) => {
-				if (mounted) setError(err.message || 'Impossible de charger ce produit.');
-			})
-			.finally(() => {
-				if (mounted) setLoading(false);
-			});
-
-		return () => {
-			mounted = false;
-		};
-	}, [idProduit]);
-
-	useEffect(() => {
-		let mounted = true;
-
-		if (!idProduit) return () => {
-			mounted = false;
-		};
-
-		setReviewsLoading(true);
-		setReviewsError('');
-
-		fetchProductReviews(idProduit)
-			.then((data) => {
-				if (!mounted) return;
-				setReviewsData({
-					summary: data?.summary || null,
-					reviews: Array.isArray(data?.reviews) ? data.reviews : [],
-				});
-			})
-			.catch((err) => {
-				if (!mounted) return;
-				setReviewsError(err.message || 'Impossible de charger les avis.');
-			})
-			.finally(() => {
-				if (mounted) setReviewsLoading(false);
-			});
-
-		return () => {
-			mounted = false;
-		};
-	}, [idProduit]);
-
-	if (loading) {
+	if (productLoading) {
 		return (
 			<PageShell contentClassName="flex min-h-[50vh] items-center justify-center">
 				<SurfaceCard className="text-center">
@@ -155,11 +144,11 @@ function ProductDetailPage() {
 		);
 	}
 
-	if (error) {
+	if (productError) {
 		return (
 			<PageShell contentClassName="flex min-h-[50vh] items-center justify-center">
 				<SurfaceCard className="max-w-xl text-center">
-					<p className="text-sm font-semibold text-red-700">Erreur : {error}</p>
+					<p className="text-sm font-semibold text-red-700">Erreur : {productError.message || 'Impossible de charger ce produit.'}</p>
 					<div className="mt-4 flex items-center justify-center gap-3">
 						<ActionButton type="button" variant="secondary" onClick={() => navigate(-1)}>
 							Retour
@@ -187,6 +176,7 @@ function ProductDetailPage() {
 	const nombreAvisProduit = Number(product.nombreAvisProduit ?? 0);
 	const noteMoyenneProducteur = Number(product.noteMoyenneProducteur ?? 0);
 	const nombreAvisProducteur = Number(product.nombreAvisProducteur ?? 0);
+	const producerPath = product?.idProfessionnel ? `/producteurs/${product.idProfessionnel}` : null;
 	const quantityStep = isUnit ? 1 : 0.1;
 
 	const handleAddToCart = async () => {
@@ -199,20 +189,19 @@ function ProductDetailPage() {
 		setReviewMessage('');
 
 		try {
-			await postProductReview(idProduit, {
+			await reviewMutation.mutateAsync({
 				note: Number(reviewForm.note),
 				commentaire: reviewForm.commentaire,
 			});
-			const refreshed = await fetchProductReviews(idProduit);
-			setReviewsData({
-				summary: refreshed?.summary || null,
-				reviews: Array.isArray(refreshed?.reviews) ? refreshed.reviews : [],
-			});
 			setIsEditingReview(false);
 			setReviewForm({ note: 5, commentaire: '' });
-			setReviewMessage(myReview ? 'Votre avis a été mis à jour.' : 'Votre avis a été enregistré.');
+			const message = myReview ? 'Votre avis a été mis à jour.' : 'Votre avis a été enregistré.';
+			setReviewMessage(message);
+			toast.showSuccess(message);
 		} catch (err) {
-			setReviewsError(err.message || 'Impossible d\'enregistrer votre avis.');
+			const message = err.message || 'Impossible d\'enregistrer votre avis.';
+			setReviewsError(message);
+			toast.showError(message);
 		}
 	};
 
@@ -245,7 +234,13 @@ function ProductDetailPage() {
 				</Link>
 			</div>
 			<SectionHeader eyebrow="Produit" title={name}>
-				<p>{producer}</p>
+				{producerPath ? (
+					<p>
+						<Link className="font-semibold text-primary-700 hover:text-primary-800" to={producerPath}>{producer}</Link>
+					</p>
+				) : (
+					<p>{producer}</p>
+				)}
 			</SectionHeader>
 
 			<div className="mt-8 grid gap-6 xl:grid-cols-[1.3fr_0.7fr]">
@@ -274,7 +269,13 @@ function ProductDetailPage() {
 					<div className="space-y-4 p-5">
 						<div className="flex flex-wrap items-center justify-between gap-3">
 							<div>
-								<p className="text-sm font-semibold uppercase tracking-[0.12em] text-primary-700">{producer}</p>
+								{producerPath ? (
+									<p className="text-sm font-semibold uppercase tracking-[0.12em] text-primary-700">
+										<Link className="hover:text-primary-800" to={producerPath}>{producer}</Link>
+									</p>
+								) : (
+									<p className="text-sm font-semibold uppercase tracking-[0.12em] text-primary-700">{producer}</p>
+								)}
 								<h2 className="mt-1 text-3xl font-bold text-secondary-900">{name}</h2>
 							</div>
 							<p className="text-2xl font-bold text-primary-700">{formatPrice(product.prix ?? product.price, isUnit)}</p>
@@ -326,6 +327,20 @@ function ProductDetailPage() {
 							</ActionButton>
 						</div>
 					</SurfaceCard>
+
+					{producerPath && (
+						<SurfaceCard className="p-5">
+							<p className="text-xs font-semibold uppercase tracking-[0.12em] text-primary-700">Producteur</p>
+							<h3 className="mt-2 text-xl font-bold text-secondary-900">{producer}</h3>
+							<p className="mt-1 text-sm text-secondary-500">
+								{noteMoyenneProducteur.toFixed(1)}/5 · {nombreAvisProducteur} avis clients
+							</p>
+							<ActionLink to={producerPath} variant="secondary" className="mt-4 w-full gap-2">
+								<span className="material-symbols-rounded text-base">storefront</span>
+								Voir la fiche producteur
+							</ActionLink>
+						</SurfaceCard>
+					)}
 
 					<SurfaceCard className="p-5">
 						<p className="text-xs font-semibold uppercase tracking-[0.12em] text-primary-700">Avis clients</p>
@@ -380,8 +395,8 @@ function ProductDetailPage() {
 									className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm outline-none focus:border-primary-400"
 								/>
 								<div className="flex items-center gap-2">
-									<ActionButton type="submit" className="h-9 text-xs">
-										{canEditReview ? 'Enregistrer les modifications' : 'Publier mon avis'}
+									<ActionButton type="submit" className="h-9 text-xs" disabled={reviewMutation.isPending}>
+										{reviewMutation.isPending ? 'Enregistrement...' : (canEditReview ? 'Enregistrer les modifications' : 'Publier mon avis')}
 									</ActionButton>
 									{canEditReview ? (
 										<ActionButton

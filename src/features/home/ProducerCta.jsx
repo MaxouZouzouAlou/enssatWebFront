@@ -1,8 +1,13 @@
 import { ActionLink } from '../../components/Button.jsx';
 import { homeImages } from './homeData';
 
+const softGreenFilter = {
+	filter: 'brightness(0.78)'
+};
+
 export default function ProducerCta({ isAuthenticated = false, isProfessional = false }) {
 	const content = getCtaContent({ isAuthenticated, isProfessional });
+	const ctaImage = isAuthenticated && !isProfessional ? homeImages.customer : homeImages.producer;
 
 	return (
 		<section className="px-4 py-16 md:py-24">
@@ -10,7 +15,8 @@ export default function ProducerCta({ isAuthenticated = false, isProfessional = 
 				<img
 					alt=""
 					className="absolute inset-y-0 right-0 hidden h-full w-1/2 object-cover opacity-35 mix-blend-screen md:block"
-					src={homeImages.producer}
+					style={ctaImage === homeImages.customer ? undefined : softGreenFilter}
+					src={ctaImage}
 				/>
 				<div className="relative max-w-2xl">
 					<p className="text-xs font-bold uppercase tracking-[0.22em] text-primary-100">{content.eyebrow}</p>

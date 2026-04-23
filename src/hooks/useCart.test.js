@@ -1,4 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import useCart from './useCart';
 import shoppingCartService from '../services/shoppingCart';
 
@@ -26,8 +27,21 @@ beforeEach(() => {
 	jest.clearAllMocks();
 });
 
+function createWrapper() {
+	const queryClient = new QueryClient({
+		defaultOptions: {
+			queries: { retry: false },
+			mutations: { retry: false },
+		},
+	});
+
+	return function Wrapper({ children }) {
+		return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+	};
+}
+
 test('adds products locally for guests without calling the backend', async () => {
-	const { result } = renderHook(() => useCart(null));
+	const { result } = renderHook(() => useCart(null), { wrapper: createWrapper() });
 
 	await act(async () => {
 		await result.current.addToCart(product, 0.5);
@@ -43,7 +57,7 @@ test('uses the backend cart for authenticated profiles', async () => {
 	shoppingCartService.getCurrentShoppingCartItems.mockResolvedValue([]);
 	shoppingCartService.addProductToShoppingCart.mockResolvedValue({ idPanier: 7, idProduit: 2, quantite: 1 });
 
-	const { result } = renderHook(() => useCart(authenticatedProfile));
+	const { result } = renderHook(() => useCart(authenticatedProfile), { wrapper: createWrapper() });
 
 	await waitFor(() => expect(result.current.cartId).toBe(7));
 
@@ -58,7 +72,7 @@ test('uses the backend cart for authenticated profiles', async () => {
 });
 
 test('updates local quantities without backend calls for guests', async () => {
-	const { result } = renderHook(() => useCart(null, initialCart));
+	const { result } = renderHook(() => useCart(null, initialCart), { wrapper: createWrapper() });
 
 	await act(async () => {
 		await result.current.updateQuantity(2, 1.5);
@@ -74,7 +88,7 @@ test('exposes a user-facing cart error when a backend update fails', async () =>
 	shoppingCartService.getCurrentShoppingCartItems.mockResolvedValue([]);
 	shoppingCartService.addProductToShoppingCart.mockRejectedValue(new Error('Failed: Stock insuffisant pour ce produit.'));
 
-	const { result } = renderHook(() => useCart(authenticatedProfile));
+	const { result } = renderHook(() => useCart(authenticatedProfile), { wrapper: createWrapper() });
 
 	await waitFor(() => expect(result.current.cartId).toBe(7));
 

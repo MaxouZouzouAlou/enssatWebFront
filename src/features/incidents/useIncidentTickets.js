@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
 	createIncident,
 	fetchIncident,
@@ -6,6 +7,7 @@ import {
 	replyToIncident,
 	updateIncidentStatus,
 } from '../../services/incidents-client';
+import { queryKeys } from '../../utils/queryKeys.js';
 
 const emptyPermissions = {
 	canManageTickets: false,
@@ -14,54 +16,91 @@ const emptyPermissions = {
 };
 
 export default function useIncidentTickets({ initialTicketId } = {}) {
-	const [tickets, setTickets] = useState([]);
-	const [permissions, setPermissions] = useState(emptyPermissions);
-	const [selectedTicket, setSelectedTicket] = useState(null);
-	const [isLoading, setIsLoading] = useState(true);
-	const [detailLoading, setDetailLoading] = useState(false);
-	const [mutationLoading, setMutationLoading] = useState(false);
+	const queryClient = useQueryClient();
+	const [selectedTicketId, setSelectedTicketId] = useState(initialTicketId || null);
 	const [error, setError] = useState('');
 	const [statusFilter, setStatusFilter] = useState('all');
 	const [severityFilter, setSeverityFilter] = useState('all');
 
-	const loadTickets = useCallback(async ({ silent = false } = {}) => {
-		if (!silent) setIsLoading(true);
-		try {
-			const payload = await fetchIncidents();
-			setTickets(Array.isArray(payload.tickets) ? payload.tickets : []);
-			setPermissions(payload.permissions || emptyPermissions);
-			setError('');
-		} catch (err) {
-			setError(err.message);
-		} finally {
-			if (!silent) setIsLoading(false);
-		}
-	}, []);
-
-	const openTicket = useCallback(async (ticketId) => {
-		if (!ticketId) return;
-		setDetailLoading(true);
-		try {
-			const detail = await fetchIncident(ticketId);
-			setSelectedTicket(detail);
-			setPermissions(detail.permissions || emptyPermissions);
-			setError('');
-		} catch (err) {
-			setError(err.message);
-		} finally {
-			setDetailLoading(false);
-		}
-	}, []);
-
-	useEffect(() => {
-		loadTickets();
-	}, [loadTickets]);
+	const incidentsQuery = useQuery({
+		queryKey: queryKeys.incidents.list,
+		queryFn: fetchIncidents,
+	});
+	const incidentDetailQuery = useQuery({
+		queryKey: queryKeys.incidents.detail(selectedTicketId),
+		queryFn: () => fetchIncident(selectedTicketId),
+		enabled: Boolean(selectedTicketId),
+	});
 
 	useEffect(() => {
 		if (initialTicketId) {
-			openTicket(initialTicketId);
+			setSelectedTicketId(initialTicketId);
 		}
-	}, [initialTicketId, openTicket]);
+	}, [initialTicketId]);
+
+	useEffect(() => {
+		const nextError = incidentsQuery.error?.message || incidentDetailQuery.error?.message || '';
+		setError(nextError);
+	}, [incidentsQuery.error, incidentDetailQuery.error]);
+
+	const loadTickets = async () => {
+		await queryClient.invalidateQueries({ queryKey: queryKeys.incidents.list });
+	};
+
+	const openTicket = async (ticketId) => {
+		if (!ticketId) return;
+		setSelectedTicketId(ticketId);
+	};
+
+	const refreshIncidentData = async (ticketId) => {
+		await Promise.all([
+			queryClient.invalidateQueries({ queryKey: queryKeys.incidents.list }),
+			queryClient.invalidateQueries({ queryKey: queryKeys.incidents.detail(ticketId) }),
+		]);
+	};
+
+	const createIncidentMutation = useMutation({
+		mutationFn: createIncident,
+		onSuccess: async (detail) => {
+			setSelectedTicketId(detail?.ticket?.id || null);
+			await Promise.all([
+				queryClient.setQueryData(queryKeys.incidents.detail(detail?.ticket?.id), detail),
+				queryClient.invalidateQueries({ queryKey: queryKeys.incidents.list }),
+			]);
+		},
+	});
+
+	const replyMutation = useMutation({
+		mutationFn: ({ ticketId, message }) => replyToIncident(ticketId, message),
+		onSuccess: async (detail) => {
+			const ticketId = detail?.ticket?.id;
+			if (ticketId) {
+				queryClient.setQueryData(queryKeys.incidents.detail(ticketId), detail);
+				await refreshIncidentData(ticketId);
+			}
+		},
+	});
+
+	const changeStatusMutation = useMutation({
+		mutationFn: ({ ticketId, status, commentaire }) => updateIncidentStatus(ticketId, status, commentaire),
+		onSuccess: async (detail) => {
+			const ticketId = detail?.ticket?.id;
+			if (ticketId) {
+				queryClient.setQueryData(queryKeys.incidents.detail(ticketId), detail);
+				await refreshIncidentData(ticketId);
+			}
+		},
+	});
+
+	const tickets = useMemo(
+		() => (Array.isArray(incidentsQuery.data?.tickets) ? incidentsQuery.data.tickets : []),
+		[incidentsQuery.data?.tickets]
+	);
+	const permissions = incidentDetailQuery.data?.permissions || incidentsQuery.data?.permissions || emptyPermissions;
+	const selectedTicket = incidentDetailQuery.data || null;
+	const isLoading = incidentsQuery.isLoading;
+	const detailLoading = incidentDetailQuery.isLoading || incidentDetailQuery.isFetching;
+	const mutationLoading = createIncidentMutation.isPending || replyMutation.isPending || changeStatusMutation.isPending;
 
 	const filteredTickets = useMemo(() => {
 		return tickets.filter((ticket) => {
@@ -104,52 +143,40 @@ export default function useIncidentTickets({ initialTicketId } = {}) {
 	}, [kpi]);
 
 	const submitTicket = async (payload) => {
-		setMutationLoading(true);
 		try {
-			const detail = await createIncident(payload);
-			setSelectedTicket(detail);
-			await loadTickets({ silent: true });
+			const detail = await createIncidentMutation.mutateAsync(payload);
 			setError('');
+			if (detail?.ticket?.id) {
+				setSelectedTicketId(detail.ticket.id);
+			}
 			return true;
 		} catch (err) {
 			setError(err.message);
 			return false;
-		} finally {
-			setMutationLoading(false);
 		}
 	};
 
 	const submitReply = async (message) => {
 		if (!selectedTicket?.ticket?.id) return false;
-		setMutationLoading(true);
 		try {
-			const detail = await replyToIncident(selectedTicket.ticket.id, message);
-			setSelectedTicket(detail);
-			await loadTickets({ silent: true });
+			await replyMutation.mutateAsync({ ticketId: selectedTicket.ticket.id, message });
 			setError('');
 			return true;
 		} catch (err) {
 			setError(err.message);
 			return false;
-		} finally {
-			setMutationLoading(false);
 		}
 	};
 
 	const changeStatus = async (status, commentaire) => {
 		if (!selectedTicket?.ticket?.id) return false;
-		setMutationLoading(true);
 		try {
-			const detail = await updateIncidentStatus(selectedTicket.ticket.id, status, commentaire);
-			setSelectedTicket(detail);
-			await loadTickets({ silent: true });
+			await changeStatusMutation.mutateAsync({ ticketId: selectedTicket.ticket.id, status, commentaire });
 			setError('');
 			return true;
 		} catch (err) {
 			setError(err.message);
 			return false;
-		} finally {
-			setMutationLoading(false);
 		}
 	};
 

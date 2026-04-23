@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import InteractiveMapPage from './InteractiveMapPage.jsx';
 import { fetchMapLocations, fetchOffersByLocation } from '../services/map-client.js';
 
@@ -30,6 +31,17 @@ jest.mock('react-leaflet', () => ({
     setView: mockSetView,
   }),
 }));
+
+function renderWithQueryClient(ui) {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+
+  return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+}
 
 describe('InteractiveMapPage', () => {
   beforeEach(() => {
@@ -97,7 +109,7 @@ describe('InteractiveMapPage', () => {
       ],
     });
 
-    render(<InteractiveMapPage />);
+    renderWithQueryClient(<InteractiveMapPage />);
 
     await waitFor(() => expect(fetchMapLocations).toHaveBeenCalledTimes(1));
     expect(fetchOffersByLocation).not.toHaveBeenCalled();
@@ -139,7 +151,7 @@ describe('InteractiveMapPage', () => {
 
     fetchOffersByLocation.mockRejectedValue(new Error('Impossible de charger les offres de ce lieu.'));
 
-    render(<InteractiveMapPage />);
+    renderWithQueryClient(<InteractiveMapPage />);
 
     await waitFor(() => expect(fetchMapLocations).toHaveBeenCalledTimes(1));
     await screen.findByTestId('map-marker');

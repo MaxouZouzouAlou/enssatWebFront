@@ -22,6 +22,14 @@ function getFooterLinks({ isAuthenticated, isProfessional }) {
 			links: [
 				...(isAuthenticated ? [['Tickets incidents', '/tickets-incidents'], ['Mon compte', '/compte']] : [['Connexion', '/login']])
 			]
+		},
+		{
+			title: 'Legal',
+			links: [
+				['Mentions légales', '/mentions-legales'],
+				['Confidentialité', '/confidentialite'],
+				["Conditions d'utilisation", '/conditions-utilisation']
+			]
 		}
 	].filter((group) => group.links.length > 0);
 }
@@ -50,9 +58,15 @@ export default function SiteFooter({ isAuthenticated = false, isProfessional = f
 							Point relais ou livraison
 						</span>
 					</div>
+					<div className="mt-6 rounded-2xl border border-neutral-200 bg-white/70 px-4 py-4 text-sm text-neutral-700 shadow-sm">
+						<p className="font-semibold text-secondary-900">Contact projet</p>
+						<p className="mt-2">ENSSAT</p>
+						<p>6 rue de Kerampont</p>
+						<p>22305 Lannion Cedex</p>
+					</div>
 				</div>
 
-				<nav className="grid gap-8 sm:grid-cols-3" aria-label="Navigation pied de page">
+				<nav className="grid gap-8 sm:grid-cols-4" aria-label="Navigation pied de page">
 					{footerLinks.map((group) => (
 						<div key={group.title}>
 							<h2 className="text-xs font-bold uppercase tracking-[0.2em] text-primary-700">{group.title}</h2>

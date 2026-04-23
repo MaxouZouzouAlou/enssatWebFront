@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import shoppingCartService from '../services/shoppingCart';
+import { queryKeys } from '../utils/queryKeys.js';
 
 const EMPTY_CART = [];
 
@@ -27,54 +29,103 @@ function mapCartItem(item) {
 	};
 }
 
-export default function useCart(profile = null, initial = EMPTY_CART) {
+export default function useCart(profile = null, initial = EMPTY_CART, notifications = {}) {
 	const initialCartRef = useRef(initial);
-	const [cartItems, setCartItems] = useState(initial);
+	const [guestCartItems, setGuestCartItems] = useState(initial);
 	const [cartOpen, setCartOpen] = useState(false);
 	const [cartError, setCartError] = useState(null);
-	const [cartId, setCartId] = useState(null);
 	const isServerCart = Boolean(profile);
+	const queryClient = useQueryClient();
 
 	// Tracks local items while not logged in so the login effect can read them
 	const localItemsRef = useRef(initial);
 	const prevProfileRef = useRef(profile);
+	const {
+		showError = () => {},
+		showSuccess = () => {}
+	} = notifications;
 
 	const clearCartError = () => setCartError(null);
 
 	const getCartErrorMessage = (err) => {
 		const message = err?.message || '';
-		if (message.includes('Non authentifie') || message.includes('401')) {
-			return 'Votre session a expire. Reconnectez-vous pour modifier votre panier.';
+		if (message.includes('Non authentifi') || message.includes('401')) {
+			return 'Votre session a expiré. Reconnectez-vous pour modifier votre panier.';
 		}
 		if (message.includes('Stock insuffisant')) {
 			return 'Stock insuffisant pour ce produit.';
 		}
 		if (message.includes('Quantite invalide') || message.includes('quantite doit etre entiere')) {
-			return 'Quantite invalide pour ce produit.';
+			return 'Quantité invalide pour ce produit.';
 		}
 		if (message.includes('Produit introuvable')) {
-			return 'Ce produit n est plus disponible.';
+			return "Ce produit n'est plus disponible.";
 		}
-		return "Impossible de mettre a jour le panier pour le moment.";
+		return "Impossible de mettre à jour le panier pour le moment.";
 	};
 
-	const addLocalQuantity = (product, quantity) => {
+	const addLocalQuantity = (currentItems, product, quantity) => {
 		const productId = getProductId(product);
-		setCartItems((prev) => {
-			const matchIndex = prev.findIndex((item) => getProductId(item.product) === productId);
-			if (matchIndex !== -1) {
-				const copy = [...prev];
-				copy[matchIndex] = {
-					...copy[matchIndex],
-					quantity: Number((copy[matchIndex].quantity + quantity).toFixed(3)),
-				};
-				return copy;
+		const matchIndex = currentItems.findIndex((item) => getProductId(item.product) === productId);
+		if (matchIndex !== -1) {
+			const copy = [...currentItems];
+			copy[matchIndex] = {
+				...copy[matchIndex],
+				quantity: Number((copy[matchIndex].quantity + quantity).toFixed(3)),
+			};
+			return copy;
+		}
+		return [...currentItems, { product, quantity }];
+	};
+
+	const syncServerCart = async () => {
+		const currentCart = await shoppingCartService.getCurrentShoppingCart();
+		const resolvedCartId = currentCart?.idPanier ?? null;
+		if (!resolvedCartId) {
+			throw new Error('No shopping cart resolved for current profile');
+		}
+
+		const isLoginTransition = !prevProfileRef.current;
+		const pendingLocalItems = isLoginTransition ? [...localItemsRef.current] : [];
+		prevProfileRef.current = profile;
+
+		for (const item of pendingLocalItems) {
+			const productId = getProductId(item.product);
+			if (!productId) continue;
+			try {
+				await shoppingCartService.addProductToShoppingCart(productId, item.quantity);
+			} catch {
+				// Silent: stock issues, deleted products, etc.
 			}
-			return [...prev, { product, quantity }];
+		}
+
+		const data = await shoppingCartService.getCurrentShoppingCartItems();
+		const items = Array.isArray(data)
+			? data.map(mapCartItem)
+			: data
+				? [mapCartItem(data)]
+				: [];
+
+		return {
+			cartId: resolvedCartId,
+			items
+		};
+	};
+
+	const cartQuery = useQuery({
+		queryKey: queryKeys.cart.current,
+		queryFn: syncServerCart,
+		enabled: isServerCart,
+	});
+
+	const setServerCartData = (updater) => {
+		queryClient.setQueryData(queryKeys.cart.current, (current) => {
+			const currentState = current || { cartId: null, items: [] };
+			return updater(currentState);
 		});
 	};
 
-	const addToCart = async (product, quantite = 1) => {
+	const addToCart = async (product, quantite = 1, options = {}) => {
 		const qty = Number(quantite) || 0;
 		if (qty <= 0) return;
 		const productId = getProductId(product);
@@ -83,31 +134,54 @@ export default function useCart(profile = null, initial = EMPTY_CART) {
 			clearCartError();
 			if (isServerCart) {
 				const result = await shoppingCartService.addProductToShoppingCart(productId, qty);
-				if (result?.idPanier) setCartId(result.idPanier);
+				setServerCartData((current) => ({
+					cartId: result?.idPanier ?? current.cartId,
+					items: addLocalQuantity(current.items || [], product, qty)
+				}));
+			} else {
+				setGuestCartItems((prev) => addLocalQuantity(prev, product, qty));
 			}
-			addLocalQuantity(product, qty);
+			if (options.notify !== false) {
+				showSuccess(`${product?.nom || 'Produit'} ajoute au panier.`);
+			}
 		} catch (err) {
-			setCartError(getCartErrorMessage(err));
+			const message = getCartErrorMessage(err);
+			setCartError(message);
+			if (options.notify !== false) {
+				showError(message);
+			}
 			throw err;
 		}
 	};
 
-	const removeFromCart = async (productId) => {
+	const removeFromCart = async (productId, options = {}) => {
 		try {
 			clearCartError();
 			if (isServerCart) {
 				await shoppingCartService.removeProductsFromShoppingCart(productId);
+				setServerCartData((current) => ({
+					...current,
+					items: (current.items || []).filter((item) => getProductId(item.product) !== productId)
+				}));
+			} else {
+				setGuestCartItems((prev) => prev.filter((item) => getProductId(item.product) !== productId));
 			}
-			setCartItems((prev) => prev.filter((item) => getProductId(item.product) !== productId));
+			if (options.notify !== false) {
+				showSuccess(options.message || 'Produit retire du panier.');
+			}
 		} catch (err) {
-			setCartError(getCartErrorMessage(err));
+			const message = getCartErrorMessage(err);
+			setCartError(message);
+			if (options.notify !== false) {
+				showError(message);
+			}
 			throw err;
 		}
 	};
 
-	const updateQuantity = async (productId, qty) => {
+	const updateQuantity = async (productId, qty, options = {}) => {
 		const nextQty = Number(qty) || 0;
-		const currentItem = cartItems.find((item) => getProductId(item.product) === productId);
+		const currentItem = (isServerCart ? cartQuery.data?.items : guestCartItems)?.find((item) => getProductId(item.product) === productId);
 		if (!currentItem) return;
 
 		try {
@@ -115,8 +189,16 @@ export default function useCart(profile = null, initial = EMPTY_CART) {
 			if (nextQty <= 0) {
 				if (isServerCart) {
 					await shoppingCartService.removeProductsFromShoppingCart(productId);
+					setServerCartData((current) => ({
+						...current,
+						items: (current.items || []).filter((item) => getProductId(item.product) !== productId)
+					}));
+				} else {
+					setGuestCartItems((prev) => prev.filter((item) => getProductId(item.product) !== productId));
 				}
-				setCartItems((prev) => prev.filter((item) => getProductId(item.product) !== productId));
+				if (options.notify !== false) {
+					showSuccess(options.message || 'Produit retire du panier.');
+				}
 				return;
 			}
 
@@ -127,19 +209,41 @@ export default function useCart(profile = null, initial = EMPTY_CART) {
 				} else if (delta < 0) {
 					await shoppingCartService.removeProductFromShoppingCart(productId, -delta);
 				}
+				setServerCartData((current) => ({
+					...current,
+					items: (current.items || []).map((item) => {
+						if (getProductId(item.product) === productId) {
+							return { ...item, quantity: Number(nextQty.toFixed(3)) };
+						}
+						return item;
+					}).filter((item) => item.quantity > 0)
+				}));
+			} else {
+				setGuestCartItems((prev) => prev.map((item) => {
+					if (getProductId(item.product) === productId) {
+						return { ...item, quantity: Number(nextQty.toFixed(3)) };
+					}
+					return item;
+				}).filter((item) => item.quantity > 0));
 			}
-
-			setCartItems((prev) => prev.map((item) => {
-				if (getProductId(item.product) === productId) {
-					return { ...item, quantity: Number(nextQty.toFixed(3)) };
-				}
-				return item;
-			}).filter((item) => item.quantity > 0));
+			if (options.notify !== false) {
+				showSuccess(options.message || 'Panier mis à jour.');
+			}
 		} catch (err) {
-			setCartError(getCartErrorMessage(err));
+			const message = getCartErrorMessage(err);
+			setCartError(message);
+			if (options.notify !== false) {
+				showError(message);
+			}
 			throw err;
 		}
 	};
+
+	const cartItems = useMemo(
+		() => (isServerCart ? (cartQuery.data?.items || []) : guestCartItems),
+		[isServerCart, cartQuery.data?.items, guestCartItems]
+	);
+	const cartId = isServerCart ? (cartQuery.data?.cartId ?? null) : null;
 
 	// Count unique products (one per product), not total quantity
 	const cartCount = useMemo(() => (cartItems ? cartItems.length : 0), [cartItems]);
@@ -151,62 +255,17 @@ export default function useCart(profile = null, initial = EMPTY_CART) {
 	// Keep localItemsRef in sync while not logged in
 	useEffect(() => {
 		if (!profile) {
-			localItemsRef.current = cartItems;
+			localItemsRef.current = guestCartItems;
 		}
-	}, [profile, cartItems]);
+	}, [profile, guestCartItems]);
 
-	// Load (and optionally merge local items into) the server cart on login
 	useEffect(() => {
-		let mounted = true;
 		if (!profile) {
-			setCartId(null);
-			setCartItems(initialCartRef.current);
+			setGuestCartItems(initialCartRef.current);
 			prevProfileRef.current = null;
-			return () => { mounted = false; };
+			queryClient.removeQueries({ queryKey: queryKeys.cart.current });
 		}
-
-		// Detect transition from unauthenticated → authenticated
-		const isLoginTransition = !prevProfileRef.current;
-		const pendingLocalItems = isLoginTransition ? [...localItemsRef.current] : [];
-		prevProfileRef.current = profile;
-
-		(async () => {
-			try {
-				const currentCart = await shoppingCartService.getCurrentShoppingCart();
-				const resolvedCartId = currentCart?.idPanier ?? null;
-				if (!resolvedCartId) {
-					throw new Error('No shopping cart resolved for current profile');
-				}
-
-				if (!mounted) return;
-				setCartId(resolvedCartId);
-
-				// Merge pre-login local items into the server cart (best-effort)
-				for (const item of pendingLocalItems) {
-					const productId = getProductId(item.product);
-					if (!productId) continue;
-					try {
-						await shoppingCartService.addProductToShoppingCart(productId, item.quantity);
-					} catch {
-						// Silent: stock issues, deleted products, etc.
-					}
-				}
-
-				const data = await shoppingCartService.getCurrentShoppingCartItems();
-				if (!mounted) return;
-				if (Array.isArray(data)) {
-					setCartItems(data.map(mapCartItem));
-				} else if (data) {
-					setCartItems([mapCartItem(data)]);
-				} else {
-					setCartItems([]);
-				}
-			} catch (err) {
-				console.warn('Failed to load shopping cart items', err);
-			}
-		})();
-		return () => { mounted = false; };
-	}, [profile]);
+	}, [profile, queryClient]);
 
 	return {
 		cartItems,

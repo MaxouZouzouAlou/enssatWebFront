@@ -5,6 +5,7 @@ import Header from '../components/header/Header.jsx';
 import SiteFooter from '../components/SiteFooter.jsx';
 import useAuthProfile from '../features/auth/useAuthProfile';
 import useCart from '../hooks/useCart';
+import useNotifications from '../hooks/useNotifications';
 import AccountPage from '../pages/AccountPage.jsx';
 import CheckoutDeliveryPage from '../pages/CheckoutDeliveryPage.jsx';
 import CheckoutPaymentPage from '../pages/CheckoutPaymentPage.jsx';
@@ -12,20 +13,26 @@ import CheckoutReviewPage from '../pages/CheckoutReviewPage.jsx';
 import IncidentTicketsPage from '../pages/IncidentTicketsPage.jsx';
 import HomePage from '../pages/HomePage.jsx';
 import LoginPage from '../pages/LoginPage.jsx';
+import LegalMentionsPage from '../pages/LegalMentionsPage.jsx';
 import LoyaltyPage from '../pages/LoyaltyPage.jsx';
 import OrderDetailPage from '../pages/OrderDetailPage.jsx';
 import OrderHistoryPage from '../pages/OrderHistoryPage.jsx';
 import PanierPage from '../pages/PanierPage.jsx';
+import PrivacyPolicyPage from '../pages/PrivacyPolicyPage.jsx';
 import ProfessionalDashboardPage from '../pages/ProfessionalDashboardPage.jsx';
 import ProductsPage from '../pages/ProductsPage.jsx';
 import ProductDetailPage from '../pages/ProductDetailPage.jsx';
+import ProducerPage from '../pages/ProducerPage.jsx';
 import RegisterPage from '../pages/RegisterPage.jsx';
 import ResetPasswordPage from '../pages/ResetPasswordPage.jsx';
 import SettingsPage from '../pages/SettingsPage.jsx';
+import SuperAdminPage from '../pages/SuperAdminPage.jsx';
+import TermsOfUsePage from '../pages/TermsOfUsePage.jsx';
 import InteractiveMapPage from '../pages/InteractiveMapPage.jsx';
 import { authClient } from '../services/auth-client';
+import { useToast } from './ToastProvider.jsx';
 
-const protectedPaths = new Set(['/compte', '/commandes', '/fidelite', '/dashboard-producteur', '/espace-pro', '/tickets-incidents', '/commande/livraison', '/commande/paiement', '/commande/verification']);
+const protectedPaths = new Set(['/compte', '/commandes', '/fidelite', '/dashboard-producteur', '/espace-pro', '/superadmin', '/tickets-incidents', '/commande/livraison', '/commande/paiement', '/commande/verification']);
 
 
 export function getLogoutRedirectPath(pathname) {
@@ -61,9 +68,14 @@ function LoadingPage() {
 export default function AppRoutes() {
 	const navigate = useNavigate();
 	const location = useLocation();
+	const toast = useToast();
 	const { clearProfile, profileState, refreshSession, sessionState } = useAuthProfile();
 	const profile = profileState.data?.profile;
-	const { cartError, cartItems, cartCount, addToCart, clearCartError, removeFromCart, updateQuantity } = useCart(profile);
+	const { cartError, cartItems, cartCount, addToCart, clearCartError, removeFromCart, updateQuantity } = useCart(profile, undefined, {
+		showError: toast.showError,
+		showInfo: toast.showInfo,
+		showSuccess: toast.showSuccess
+	});
 
 	useEffect(() => {
 		window.scrollTo(0, 0);
@@ -86,7 +98,9 @@ export default function AppRoutes() {
 
 	const accountType = profile?.accountType || sessionState.data?.user?.accountType || 'particulier';
 	const isAuthenticated = Boolean(sessionState.data);
+	const { notifications, unreadCount, markRead, markAllRead, deleteNotif } = useNotifications(isAuthenticated);
 	const isProfessional = accountType === 'professionnel' || accountType === 'pro';
+	const isSuperAdmin = accountType === 'superadmin';
 	const professionalId = profile?.professionnel?.id;
 	const isProfileLoading = Boolean(profileState.loading);
 	const professionalCompanies = useMemo(() => {
@@ -144,6 +158,13 @@ export default function AppRoutes() {
 		return element;
 	};
 
+	const requireSuperAdmin = (element) => {
+		if (!isAuthenticated) return <Navigate to="/login" replace />;
+		if (isProfileLoading) return <LoadingPage />;
+		if (!isSuperAdmin) return <Navigate to="/compte" replace />;
+		return element;
+	};
+
 	return (
 		<Routes>
 			{/* Pages auth — sans header ni footer */}
@@ -167,6 +188,12 @@ export default function AppRoutes() {
 						cartItems={cartItems}
 						isAuthenticated={isAuthenticated}
 						isProfessional={isProfessional}
+						isSuperAdmin={isSuperAdmin}
+						notifications={notifications}
+						notificationCount={unreadCount}
+						onMarkNotificationRead={markRead}
+						onMarkAllNotificationsRead={markAllRead}
+						onDeleteNotification={deleteNotif}
 						removeFromCart={removeFromCart}
 						onSignOut={signOut}
 						updateQuantity={updateQuantity}
@@ -200,7 +227,12 @@ export default function AppRoutes() {
 				<Route path="/commandes" element={requireAuth(<OrderHistoryPage />)} />
 				<Route path="/commandes/:idCommande" element={requireAuth(<OrderDetailPage />)} />
 				<Route path="/fidelite" element={requireAuth(<LoyaltyPage />)} />
+				<Route path="/superadmin" element={requireSuperAdmin(<SuperAdminPage />)} />
 				<Route path="/carte-interactive" element={<InteractiveMapPage />} />
+				<Route path="/producteurs/:idProfessionnel" element={<ProducerPage isAuthenticated={isAuthenticated} accountType={accountType} />} />
+				<Route path="/mentions-legales" element={<LegalMentionsPage />} />
+				<Route path="/confidentialite" element={<PrivacyPolicyPage />} />
+				<Route path="/conditions-utilisation" element={<TermsOfUsePage />} />
 				<Route element={
 					<MarketplaceLayout
 						addToCart={addToCart}

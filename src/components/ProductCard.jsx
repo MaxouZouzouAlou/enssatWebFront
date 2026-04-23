@@ -68,9 +68,17 @@ function resolveProductImageUrl(imageValue) {
 function QuantityStepper({ label, min, step, suffix, value, onBlur, onChange }) {
   const numericValue = Number(value) || min;
   const update = (nextValue) => onChange(String(Math.max(min, nextValue)));
+  const stopInteraction = (event) => {
+    event.stopPropagation();
+  };
 
   return (
-    <div className="inline-flex h-9 items-center rounded-full bg-neutral-100 px-2 focus-within:ring-2 focus-within:ring-primary-400">
+    <div
+      className="inline-flex h-9 items-center rounded-full bg-neutral-100 px-2 focus-within:ring-2 focus-within:ring-primary-400"
+      onClick={stopInteraction}
+      onKeyDown={stopInteraction}
+      onPointerDown={stopInteraction}
+    >
       <button
         type="button"
         onClick={() => update(numericValue - step)}
@@ -86,6 +94,7 @@ function QuantityStepper({ label, min, step, suffix, value, onBlur, onChange }) 
         value={value}
         onChange={(event) => onChange(event.target.value)}
         onBlur={onBlur ?? (() => update(Number(value) || min))}
+        onClick={stopInteraction}
         aria-label={label}
         className="no-number-spinner h-7 w-10 border-0 bg-transparent px-1 text-center text-sm font-semibold text-secondary-900 focus:outline-none"
       />
@@ -102,7 +111,7 @@ function QuantityStepper({ label, min, step, suffix, value, onBlur, onChange }) 
   );
 }
 
-export default function ProductCard({ product, onAdd = () => {}, onOpenReviews = () => {}, onOpenProduct = null }) {
+export default function ProductCard({ product, onAdd = () => {}, onOpenProduct = null }) {
   const name = product.nom ?? product.name ?? product.title ?? 'Sans nom';
   const priceRaw = product.prix ?? product.price;
   const price = priceRaw != null && priceRaw !== '' ? Number(priceRaw).toFixed(2) : null;
@@ -111,10 +120,6 @@ export default function ProductCard({ product, onAdd = () => {}, onOpenReviews =
   const stock = product.stock ?? null;
   const bio = product.bio === 1 || product.bio === '1' || product.bio === true;
   const visible = product.visible === 1 || product.visible === '1' || product.visible === true;
-  const noteMoyenneProduit = Number(product.noteMoyenneProduit ?? 0);
-  const nombreAvisProduit = Number(product.nombreAvisProduit ?? 0);
-  const noteMoyenneProducteur = Number(product.noteMoyenneProducteur ?? 0);
-  const nombreAvisProducteur = Number(product.nombreAvisProducteur ?? 0);
   const unitProduct = isUnitProduct(product);
   const config = getQuantityInputConfig(product);
   const [quantityInput, setQuantityInput] = useState(unitProduct ? '1' : '100');
@@ -231,9 +236,6 @@ export default function ProductCard({ product, onAdd = () => {}, onOpenReviews =
                 Produit masque
               </p>
             )}
-            <p className="text-xs font-medium text-secondary-500">
-              Produit {noteMoyenneProduit.toFixed(1)}/5 ({nombreAvisProduit}) - Producteur {noteMoyenneProducteur.toFixed(1)}/5 ({nombreAvisProducteur})
-            </p>
             <QuantityStepper
               label={unitProduct ? 'Quantite en unites' : 'Quantite en poids'}
               min={quantityUnit === 'kg' ? 1 : config.min}
@@ -249,23 +251,15 @@ export default function ProductCard({ product, onAdd = () => {}, onOpenReviews =
           </div>
           <div className="flex items-center gap-2">
             <ActionButton
-              variant="secondary"
-              className="h-10 w-10 rounded-full p-0"
-              aria-label="Voir et noter"
-              onClick={(event) => {
-					event.stopPropagation();
-					onOpenReviews(product);
-				}}
-            >
-              <span className="material-symbols-rounded text-xl">reviews</span>
-            </ActionButton>
-            <ActionButton
               variant="primary"
               className="h-10 w-10 rounded-full p-0 shadow-lg"
               aria-label="Ajouter au panier"
               onClick={async (event) => {
 					event.stopPropagation();
                 try { await onAdd(product, cartQuantity); } catch (err) { console.error(err); }
+              }}
+              onKeyDown={(event) => {
+                event.stopPropagation();
               }}
             >
               <span className="material-symbols-rounded text-2xl">shopping_bag</span>

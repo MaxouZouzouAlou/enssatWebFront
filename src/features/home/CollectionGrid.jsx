@@ -3,6 +3,10 @@ import SectionHeader from '../../components/layout/SectionHeader.jsx';
 import SurfaceCard from '../../components/layout/SurfaceCard.jsx';
 import { collections } from './homeData';
 
+const softGreenFilter = {
+	filter: 'brightness(0.78)'
+};
+
 export default function CollectionGrid() {
 	return (
 		<section className="bg-neutral-50 py-16 md:py-24">
@@ -34,6 +38,7 @@ function CollectionCard({ item }) {
 					<img
 						alt=""
 						className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
+						style={softGreenFilter}
 						src={item.image}
 					/>
 					<div className="absolute inset-0 bg-gradient-to-t from-secondary-900/75 via-secondary-900/25 to-transparent" />

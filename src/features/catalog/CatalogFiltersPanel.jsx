@@ -1,5 +1,6 @@
 const SORT_OPTIONS = [
 	{ value: 'proximity', label: 'Proximite' },
+	{ value: 'rating_desc', label: 'Popularite' },
 	{ value: 'alpha_asc', label: 'Alphabetique A-Z' },
 	{ value: 'alpha_desc', label: 'Alphabetique Z-A' },
 	{ value: 'stock_desc', label: 'Stock disponible' }

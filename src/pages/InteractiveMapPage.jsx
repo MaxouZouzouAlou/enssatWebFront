@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import L from 'leaflet';
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -6,6 +7,7 @@ import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 import { fetchMapLocations, fetchOffersByLocation } from '../services/map-client.js';
+import { queryKeys } from '../utils/queryKeys.js';
 
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: markerIcon2x,
@@ -57,60 +59,40 @@ function MapViewportController({ center, zoom }) {
 }
 
 export default function InteractiveMapPage() {
-  const [locations, setLocations] = useState([]);
   const [selectedLieuId, setSelectedLieuId] = useState(null);
-  const [selectedData, setSelectedData] = useState(null);
-  const [loadingLocations, setLoadingLocations] = useState(true);
-  const [loadingOffers, setLoadingOffers] = useState(false);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    const run = async () => {
-      setLoadingLocations(true);
-      try {
-        const data = await fetchMapLocations();
-        const validLocations = Array.isArray(data)
-          ? data.filter((location) => getLocationCoordinates(location))
-          : [];
-
-        setLocations(validLocations);
-        setSelectedLieuId(null);
-        setSelectedData(null);
-        setError('');
-      } catch (err) {
-        setError(err.message || 'Erreur de chargement de la carte.');
-        setLocations([]);
-        setSelectedLieuId(null);
-        setSelectedData(null);
-      } finally {
-        setLoadingLocations(false);
-      }
-    };
-
-    run();
-  }, []);
+  const locationsQuery = useQuery({
+    queryKey: queryKeys.map.locations,
+    queryFn: fetchMapLocations,
+  });
+  const offersQuery = useQuery({
+    queryKey: queryKeys.map.offers(selectedLieuId),
+    queryFn: () => fetchOffersByLocation(selectedLieuId),
+    enabled: Boolean(selectedLieuId),
+  });
 
   useEffect(() => {
-    if (!selectedLieuId) return;
+    if (locationsQuery.error) {
+      setError(locationsQuery.error.message || 'Erreur de chargement de la carte.');
+      return;
+    }
+    if (offersQuery.error) {
+      setError(offersQuery.error.message || 'Erreur de chargement des offres.');
+      return;
+    }
+    setError('');
+  }, [locationsQuery.error, offersQuery.error]);
 
-    setSelectedData(null);
-
-    const run = async () => {
-      setLoadingOffers(true);
-      try {
-        const data = await fetchOffersByLocation(selectedLieuId);
-        setSelectedData(data);
-        setError('');
-      } catch (err) {
-        setSelectedData(null);
-        setError(err.message || 'Erreur de chargement des offres.');
-      } finally {
-        setLoadingOffers(false);
-      }
-    };
-
-    run();
-  }, [selectedLieuId]);
+  const locations = useMemo(() => {
+    const data = locationsQuery.data;
+    return Array.isArray(data)
+      ? data.filter((location) => getLocationCoordinates(location))
+      : [];
+  }, [locationsQuery.data]);
+  const selectedData = offersQuery.data || null;
+  const loadingLocations = locationsQuery.isLoading;
+  const loadingOffers = offersQuery.isLoading || offersQuery.isFetching;
 
   const offers = useMemo(() => {
     if (!Array.isArray(selectedData?.offres)) return [];
@@ -144,7 +126,6 @@ export default function InteractiveMapPage() {
 
   const resetSelection = () => {
     setSelectedLieuId(null);
-    setSelectedData(null);
     setError('');
   };
 

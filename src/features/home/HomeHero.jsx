@@ -1,6 +1,10 @@
 import { ActionLink } from '../../components/Button.jsx';
 import { homeImages } from './homeData';
 
+const softGreenFilter = {
+	filter: 'brightness(0.78)'
+};
+
 export default function HomeHero({ isAuthenticated = false }) {
 	return (
 		<section className="mx-auto grid w-[min(1180px,calc(100%-2rem))] gap-10 py-14 md:grid-cols-[0.95fr_1.05fr] md:items-center md:py-20">
@@ -33,6 +37,7 @@ export default function HomeHero({ isAuthenticated = false }) {
 				<img
 					alt="Paysage agricole breton au lever du soleil"
 					className="h-full min-h-[420px] w-full object-cover md:min-h-[620px]"
+					style={softGreenFilter}
 					src={homeImages.hero}
 				/>
 				<figcaption className="absolute bottom-5 left-5 right-5 rounded-2xl bg-neutral-50/85 p-5 text-secondary-900 shadow-[0_18px_45px_rgba(29,52,34,.16)] backdrop-blur-md">

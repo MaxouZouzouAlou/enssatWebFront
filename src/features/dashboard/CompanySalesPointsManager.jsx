@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import AddressAutocompleteInput from '../address/AddressAutocompleteInput.jsx';
 import {
 	attachCompanySalesPoint,
@@ -6,6 +7,8 @@ import {
 	detachCompanySalesPoint,
 	fetchCompanySalesPoints
 } from '../../services/professionalSalesPoints.js';
+import { useToast } from '../../app/ToastProvider.jsx';
+import { queryKeys } from '../../utils/queryKeys.js';
 
 function formatAddress(salesPoint) {
 	const address = salesPoint?.adresse;
@@ -22,8 +25,8 @@ const EMPTY_FORM = {
 };
 
 export default function CompanySalesPointsManager({ professionalId, selectedCompany }) {
-	const [data, setData] = useState({ currentSalesPoints: [], availableSalesPoints: [] });
-	const [loading, setLoading] = useState(false);
+	const toast = useToast();
+	const queryClient = useQueryClient();
 	const [error, setError] = useState('');
 	const [message, setMessage] = useState('');
 	const [selectedExistingId, setSelectedExistingId] = useState('');
@@ -38,29 +41,6 @@ export default function CompanySalesPointsManager({ professionalId, selectedComp
 	}));
 
 	useEffect(() => {
-		if (!professionalId || !selectedCompany?.id) return;
-
-		let ignore = false;
-		setLoading(true);
-		setError('');
-		setMessage('');
-
-		fetchCompanySalesPoints(professionalId, selectedCompany.id)
-			.then((response) => {
-				if (ignore) return;
-				setData({
-					currentSalesPoints: response.currentSalesPoints || [],
-					availableSalesPoints: response.availableSalesPoints || []
-				});
-				setSelectedExistingId((response.availableSalesPoints || [])[0]?.idLieu ? String(response.availableSalesPoints[0].idLieu) : '');
-			})
-			.catch((err) => {
-				if (!ignore) setError(err.message || 'Impossible de charger les points de vente.');
-			})
-			.finally(() => {
-				if (!ignore) setLoading(false);
-			});
-
 		setNewSalesPoint({
 			...EMPTY_FORM,
 			adresse_ligne: selectedCompany.adresse_ligne || '',
@@ -68,19 +48,45 @@ export default function CompanySalesPointsManager({ professionalId, selectedComp
 			ville: selectedCompany.ville || ''
 		});
 
-		return () => {
-			ignore = true;
-		};
 	}, [professionalId, selectedCompany]);
 
+	const salesPointsQuery = useQuery({
+		queryKey: queryKeys.salesPoints.company(professionalId, selectedCompany?.id),
+		queryFn: () => fetchCompanySalesPoints(professionalId, selectedCompany.id),
+		enabled: Boolean(professionalId && selectedCompany?.id),
+	});
+
+	useEffect(() => {
+		if (salesPointsQuery.error) {
+			setError(salesPointsQuery.error.message || 'Impossible de charger les points de vente.');
+			return;
+		}
+		setError('');
+	}, [salesPointsQuery.error]);
+
+	const data = salesPointsQuery.data || { currentSalesPoints: [], availableSalesPoints: [] };
+	const loading = salesPointsQuery.isLoading;
+
+	useEffect(() => {
+		setSelectedExistingId((data.availableSalesPoints || [])[0]?.idLieu ? String(data.availableSalesPoints[0].idLieu) : '');
+	}, [data.availableSalesPoints]);
+
 	const refreshSalesPoints = async () => {
-		const response = await fetchCompanySalesPoints(professionalId, selectedCompany.id);
-		setData({
-			currentSalesPoints: response.currentSalesPoints || [],
-			availableSalesPoints: response.availableSalesPoints || []
-		});
-		setSelectedExistingId((response.availableSalesPoints || [])[0]?.idLieu ? String(response.availableSalesPoints[0].idLieu) : '');
+		await queryClient.invalidateQueries({ queryKey: queryKeys.salesPoints.company(professionalId, selectedCompany?.id) });
 	};
+
+	const attachMutation = useMutation({
+		mutationFn: (idLieu) => attachCompanySalesPoint(professionalId, selectedCompany.id, idLieu),
+		onSuccess: refreshSalesPoints,
+	});
+	const createMutation = useMutation({
+		mutationFn: (payload) => createCompanySalesPoint(professionalId, selectedCompany.id, payload),
+		onSuccess: refreshSalesPoints,
+	});
+	const detachMutation = useMutation({
+		mutationFn: (idLieu) => detachCompanySalesPoint(professionalId, selectedCompany.id, idLieu),
+		onSuccess: refreshSalesPoints,
+	});
 
 	const handleAttach = async () => {
 		if (!selectedExistingId) return;
@@ -88,11 +94,13 @@ export default function CompanySalesPointsManager({ professionalId, selectedComp
 		setError('');
 		setMessage('');
 		try {
-			await attachCompanySalesPoint(professionalId, selectedCompany.id, Number(selectedExistingId));
-			await refreshSalesPoints();
-			setMessage('Point de vente rattache.');
+			await attachMutation.mutateAsync(Number(selectedExistingId));
+			setMessage('Point de vente rattaché.');
+			toast.showSuccess('Point de vente rattaché.');
 		} catch (err) {
-			setError(err.message || 'Impossible de rattacher ce point de vente.');
+			const message = err.message || 'Impossible de rattacher ce point de vente.';
+			setError(message);
+			toast.showError(message);
 		} finally {
 			setAttaching(false);
 		}
@@ -104,17 +112,19 @@ export default function CompanySalesPointsManager({ professionalId, selectedComp
 		setError('');
 		setMessage('');
 		try {
-			await createCompanySalesPoint(professionalId, selectedCompany.id, newSalesPoint);
-			await refreshSalesPoints();
+			await createMutation.mutateAsync(newSalesPoint);
 			setNewSalesPoint({
 				...EMPTY_FORM,
 				adresse_ligne: selectedCompany.adresse_ligne || '',
 				code_postal: selectedCompany.code_postal || '',
 				ville: selectedCompany.ville || ''
 			});
-			setMessage('Nouveau point de vente cree et rattache.');
+			setMessage('Nouveau point de vente créé et rattaché.');
+			toast.showSuccess('Nouveau point de vente créé et rattaché.');
 		} catch (err) {
-			setError(err.message || 'Impossible de creer ce point de vente.');
+			const message = err.message || 'Impossible de créer ce point de vente.';
+			setError(message);
+			toast.showError(message);
 		} finally {
 			setCreating(false);
 		}
@@ -125,11 +135,13 @@ export default function CompanySalesPointsManager({ professionalId, selectedComp
 		setError('');
 		setMessage('');
 		try {
-			await detachCompanySalesPoint(professionalId, selectedCompany.id, idLieu);
-			await refreshSalesPoints();
+			await detachMutation.mutateAsync(idLieu);
 			setMessage('Point de vente detache.');
+			toast.showSuccess('Point de vente detache.');
 		} catch (err) {
-			setError(err.message || 'Impossible de detacher ce point de vente.');
+			const message = err.message || 'Impossible de detacher ce point de vente.';
+			setError(message);
+			toast.showError(message);
 		} finally {
 			setDetachingId(null);
 		}
@@ -164,9 +176,9 @@ export default function CompanySalesPointsManager({ professionalId, selectedComp
 
 			<div className="mt-5 grid gap-5 xl:grid-cols-2">
 				<div className="rounded-2xl border border-neutral-200 bg-white/90 p-4 shadow-sm">
-					<h3 className="text-lg font-semibold text-secondary-900">Points de vente rattaches</h3>
+					<h3 className="text-lg font-semibold text-secondary-900">Points de vente rattachés</h3>
 					{!loading && data.currentSalesPoints.length === 0 ? (
-						<p className="mt-3 text-sm text-secondary-600">Aucun point de vente rattache a cette entreprise.</p>
+						<p className="mt-3 text-sm text-secondary-600">Aucun point de vente rattaché à cette entreprise.</p>
 					) : (
 						<ul className="mt-4 space-y-3">
 							{data.currentSalesPoints.map((salesPoint) => (
@@ -178,7 +190,7 @@ export default function CompanySalesPointsManager({ professionalId, selectedComp
 											{salesPoint.horaires ? <p className="mt-2 inline-flex rounded-full bg-secondary-100 px-3 py-1 text-xs font-semibold text-secondary-700">Horaires: {salesPoint.horaires}</p> : null}
 											{salesPoint.coordinates ? (
 												<p className="mt-2 text-xs text-secondary-500">
-													Coordonnees: {salesPoint.coordinates.latitude}, {salesPoint.coordinates.longitude}
+													Coordonnées : {salesPoint.coordinates.latitude}, {salesPoint.coordinates.longitude}
 												</p>
 											) : null}
 										</div>
@@ -228,7 +240,7 @@ export default function CompanySalesPointsManager({ professionalId, selectedComp
 					</div>
 
 					<form className="rounded-2xl border border-neutral-200 bg-white/90 p-4 shadow-sm" onSubmit={handleCreate}>
-						<h3 className="text-lg font-semibold text-secondary-900">Creer un nouveau point de vente</h3>
+						<h3 className="text-lg font-semibold text-secondary-900">Créer un nouveau point de vente</h3>
 						<div className="mt-4 grid gap-3">
 							<input
 								className="h-11 rounded-xl border border-neutral-300 bg-white px-3 text-sm text-secondary-800"
@@ -268,7 +280,7 @@ export default function CompanySalesPointsManager({ professionalId, selectedComp
 								className="h-11 rounded-xl bg-secondary-900 px-4 text-sm font-semibold text-white transition hover:bg-secondary-800 disabled:opacity-50"
 								disabled={creating}
 							>
-								{creating ? 'Creation...' : 'Creer et rattacher'}
+								{creating ? 'Création...' : 'Créer et rattacher'}
 							</button>
 						</div>
 					</form>

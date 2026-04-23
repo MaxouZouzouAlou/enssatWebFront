@@ -45,7 +45,7 @@ export async function fetchAuthProfile() {
 	});
 
 	if (response.status === 401) return null;
-	return parseJsonResponse(response, 'Impossible de recuperer le profil.');
+	return parseJsonResponse(response, 'Impossible de récupérer le profil.');
 }
 
 export async function updatePersonalAddress(payload) {
@@ -58,7 +58,7 @@ export async function updatePersonalAddress(payload) {
 		body: JSON.stringify(payload)
 	});
 
-	return parseJsonResponse(response, 'Impossible de mettre a jour votre adresse.');
+	return parseJsonResponse(response, 'Impossible de mettre à jour votre adresse.');
 }
 
 export async function updatePersonalProfile(payload) {
@@ -71,7 +71,7 @@ export async function updatePersonalProfile(payload) {
 		body: JSON.stringify(payload)
 	});
 
-	return parseJsonResponse(response, 'Impossible de mettre a jour votre profil.');
+	return parseJsonResponse(response, 'Impossible de mettre à jour votre profil.');
 }
 
 export async function requestEmailChange(payload) {
@@ -94,6 +94,28 @@ export async function deletePersonalAccount() {
 	});
 
 	return parseJsonResponse(response, 'Impossible de supprimer votre compte.');
+}
+
+export async function createProfessionalCompany(payload) {
+	const response = await fetch(`${API_BASE_URL}/api/account/profile/companies`, {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		credentials: 'include',
+		body: JSON.stringify(payload)
+	});
+
+	return parseJsonResponse(response, "Impossible de créer l'entreprise.");
+}
+
+export async function deleteProfessionalCompany(idEntreprise) {
+	const response = await fetch(`${API_BASE_URL}/api/account/profile/companies/${idEntreprise}`, {
+		method: 'DELETE',
+		credentials: 'include'
+	});
+
+	return parseJsonResponse(response, "Impossible de supprimer l'entreprise.");
 }
 
 export async function requestPasswordReset(email) {

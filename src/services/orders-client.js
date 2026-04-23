@@ -26,7 +26,7 @@ export async function previewCheckout(payload = {}) {
 		body: JSON.stringify(payload)
 	});
 
-	return parseResponse(response, 'Impossible de calculer le recapitulatif de commande.');
+	return parseResponse(response, 'Impossible de calculer le récapitulatif de commande.');
 }
 
 export async function checkoutCurrentCart(payload = {}) {
@@ -108,4 +108,51 @@ export async function runRecurringOrderNow(idAuto) {
 	});
 
 	return parseResponse(response, 'Impossible de lancer la commande récurrente.');
+}
+
+function triggerDownload(blob, fileName) {
+	const url = window.URL.createObjectURL(blob);
+	const link = document.createElement('a');
+	link.href = url;
+	link.download = fileName;
+	document.body.appendChild(link);
+	link.click();
+	link.remove();
+	window.URL.revokeObjectURL(url);
+}
+
+function extractFileNameFromDisposition(contentDisposition, fallbackName) {
+	if (!contentDisposition) return fallbackName;
+
+	const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+	if (utf8Match?.[1]) {
+		try {
+			return decodeURIComponent(utf8Match[1]);
+		} catch {
+			return utf8Match[1];
+		}
+	}
+
+	const asciiMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
+	if (asciiMatch?.[1]) {
+		return asciiMatch[1];
+	}
+
+	return fallbackName;
+}
+
+export async function downloadOrderInvoice(idCommande) {
+	const response = await fetch(`${API_BASE_URL}/orders/${idCommande}/facture.pdf`, {
+		credentials: 'include'
+	});
+
+	if (!response.ok) {
+		const data = await response.json().catch(() => ({}));
+		throw new Error(data.error || 'Impossible de télécharger la facture.');
+	}
+
+	const blob = await response.blob();
+	const disposition = response.headers.get('Content-Disposition');
+	const fileName = extractFileNameFromDisposition(disposition, `facture-commande-${idCommande}.pdf`);
+	triggerDownload(blob, fileName);
 }

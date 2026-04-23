@@ -8,6 +8,7 @@ import PageShell from '../components/layout/PageShell.jsx';
 import SectionHeader from '../components/layout/SectionHeader.jsx';
 import SurfaceCard from '../components/layout/SurfaceCard.jsx';
 import { checkoutCurrentCart, previewCheckout } from '../services/orders-client.js';
+import { useToast } from '../app/ToastProvider.jsx';
 
 function formatAddress(address) {
 	if (!address) return '';
@@ -16,6 +17,7 @@ function formatAddress(address) {
 
 export default function CheckoutReviewPage() {
 	const navigate = useNavigate();
+	const toast = useToast();
 	const { cartItems, updateQuantity } = useOutletContext();
 	const draft = useMemo(() => loadCheckoutDraft(), []);
 	const [preview, setPreview] = useState(draft.preview || null);
@@ -76,12 +78,15 @@ export default function CheckoutReviewPage() {
 				voucherId: draft.voucherId
 			});
 			await Promise.all(
-				cartItems.map((item) => updateQuantity(item.product.idProduit ?? item.product.id, 0))
+				cartItems.map((item) => updateQuantity(item.product.idProduit ?? item.product.id, 0, { notify: false }))
 			);
 			clearCheckoutDraft();
+			toast.showSuccess(`Commande #${result.order.idCommande} validee.`);
 			navigate(`/commandes/${result.order.idCommande}`, { replace: true });
 		} catch (checkoutError) {
-			setError(checkoutError.message || 'Impossible de valider la commande.');
+			const message = checkoutError.message || 'Impossible de valider la commande.';
+			setError(message);
+			toast.showError(message);
 		} finally {
 			setSubmitting(false);
 		}

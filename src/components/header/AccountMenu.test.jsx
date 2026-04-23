@@ -29,3 +29,12 @@ test('hides loyalty entry for professional accounts', () => {
 	expect(screen.queryByRole('button', { name: /ma fidélité/i })).not.toBeInTheDocument();
 	expect(screen.getByRole('button', { name: /espace pro/i })).toBeInTheDocument();
 });
+
+test('shows administration entry and hides user-only entries for superadmin accounts', () => {
+	renderAccountMenu({ isSuperAdmin: true });
+
+	expect(screen.getByRole('button', { name: /administration/i })).toBeInTheDocument();
+	expect(screen.queryByRole('button', { name: /mes commandes/i })).not.toBeInTheDocument();
+	expect(screen.queryByRole('button', { name: /ma fidélité/i })).not.toBeInTheDocument();
+	expect(screen.queryByRole('button', { name: /espace pro/i })).not.toBeInTheDocument();
+});

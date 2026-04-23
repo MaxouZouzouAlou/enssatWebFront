@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Navigate } from 'react-router';
 import { ActionButton } from '../components/Button.jsx';
 import PageShell from '../components/layout/PageShell.jsx';
@@ -11,6 +12,7 @@ import {
   fetchMyLoyalty,
   redeemVoucher,
 } from '../services/loyalty-client.js';
+import { queryKeys } from '../utils/queryKeys.js';
 
 function euro(value) {
   return `${Number(value || 0).toFixed(2)} EUR`;
@@ -18,29 +20,37 @@ function euro(value) {
 
 export default function LoyaltyPage() {
   const { profileState, sessionState } = useAuthProfile();
-  const [loyalty, setLoyalty] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const profile = profileState.data?.profile;
   const accountType = profile?.accountType || sessionState.data?.user?.accountType || null;
-
-  const loadLoyalty = async () => {
-    setLoading(true);
-    try {
-      const data = await fetchMyLoyalty();
-      setLoyalty(data);
-      setError('');
-    } catch (err) {
-      setError(err.message || 'Impossible de recuperer vos donnees fidelite.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const {
+    data: loyalty,
+    error: loyaltyError,
+    isLoading: loading,
+  } = useQuery({
+    queryKey: queryKeys.loyalty.me,
+    queryFn: fetchMyLoyalty,
+  });
 
   useEffect(() => {
-    loadLoyalty();
-  }, []);
+    setError(loyaltyError?.message || '');
+  }, [loyaltyError]);
+
+  const refreshLoyalty = async () => {
+    await queryClient.invalidateQueries({ queryKey: queryKeys.loyalty.me });
+  };
+
+  const claimMutation = useMutation({
+    mutationFn: claimLoyaltyChallenge,
+    onSuccess: refreshLoyalty,
+  });
+
+  const redeemMutation = useMutation({
+    mutationFn: redeemVoucher,
+    onSuccess: refreshLoyalty,
+  });
 
   const points = Number(loyalty?.pointsFidelite || 0);
   const voucherOptions = Array.isArray(loyalty?.voucherOptions) && loyalty.voucherOptions.length
@@ -66,9 +76,8 @@ export default function LoyaltyPage() {
 
   const onClaimChallenge = async (code) => {
     try {
-      const result = await claimLoyaltyChallenge(code);
+      const result = await claimMutation.mutateAsync(code);
       setMessage(`Defi valide: +${result.challenge.pointsRecompense} points.`);
-      await loadLoyalty();
     } catch (err) {
       setError(err.message || 'Impossible de valider ce defi.');
     }
@@ -76,11 +85,10 @@ export default function LoyaltyPage() {
 
   const onRedeemVoucher = async (pointsToSpend) => {
     try {
-      const result = await redeemVoucher(pointsToSpend);
+      const result = await redeemMutation.mutateAsync(pointsToSpend);
       setMessage(`Bon cree: ${result.voucher.codeBon} (${euro(result.voucher.valeurEuros)}).`);
-      await loadLoyalty();
     } catch (err) {
-      setError(err.message || 'Impossible de creer un bon d\'achat.');
+      setError(err.message || "Impossible de créer un bon d'achat.");
     }
   };
 
@@ -150,7 +158,7 @@ export default function LoyaltyPage() {
                         type="button"
                         onClick={() => onRedeemVoucher(option.requiredPoints)}
                         className="h-10"
-                        disabled={!option.canRedeem}
+                        disabled={!option.canRedeem || redeemMutation.isPending}
                       >
                         Convertir
                       </ActionButton>
@@ -175,7 +183,7 @@ export default function LoyaltyPage() {
                     <ActionButton
                       type="button"
                       onClick={() => onClaimChallenge(challenge.code)}
-                      disabled={!challenge.canClaim}
+                      disabled={!challenge.canClaim || claimMutation.isPending}
                       className="h-10"
                     >
                       {challenge.canClaim ? 'Valider le defi' : 'Defi termine'}

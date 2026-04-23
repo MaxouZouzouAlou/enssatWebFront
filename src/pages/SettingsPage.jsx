@@ -7,6 +7,7 @@ import SectionHeader from '../components/layout/SectionHeader.jsx';
 import SoftPanel from '../components/layout/SoftPanel.jsx';
 import SurfaceCard from '../components/layout/SurfaceCard.jsx';
 import { API_BASE_URL, authClient } from '../services/auth-client';
+import { useToast } from '../app/ToastProvider.jsx';
 
 async function updateProfile(fields) {
 	const response = await fetch(`${API_BASE_URL}/api/auth/update-user`, {
@@ -21,6 +22,7 @@ async function updateProfile(fields) {
 }
 
 function ProfileSection({ user, profile, onSaved }) {
+	const toast = useToast();
 	const nom = profile?.user?.nom || user?.lastName || '';
 	const prenom = profile?.user?.prenom || user?.firstName || '';
 	const [form, setForm] = useState({ nom, prenom });
@@ -38,9 +40,11 @@ function ProfileSection({ user, profile, onSaved }) {
 		try {
 			await updateProfile({ firstName: form.prenom, lastName: form.nom, name: `${form.prenom} ${form.nom}`.trim() });
 			setSuccess('Profil mis à jour.');
+			toast.showSuccess('Profil mis à jour.');
 			onSaved?.();
 		} catch (err) {
 			setError(err.message);
+			toast.showError(err.message || 'Mise à jour impossible.');
 		} finally {
 			setLoading(false);
 		}
@@ -65,6 +69,7 @@ function ProfileSection({ user, profile, onSaved }) {
 }
 
 function PasswordSection() {
+	const toast = useToast();
 	const [form, setForm] = useState({ current: '', next: '', confirm: '' });
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
@@ -78,10 +83,12 @@ function PasswordSection() {
 		setSuccess('');
 		if (form.next.length < 8) {
 			setError('Le nouveau mot de passe doit contenir au moins 8 caractères.');
+			toast.showError('Le nouveau mot de passe doit contenir au moins 8 caracteres.');
 			return;
 		}
 		if (form.next !== form.confirm) {
 			setError('Les mots de passe ne correspondent pas.');
+			toast.showError('Les mots de passe ne correspondent pas.');
 			return;
 		}
 		setLoading(true);
@@ -93,9 +100,11 @@ function PasswordSection() {
 			});
 			if (authError) throw new Error(authError.message || 'Mot de passe actuel incorrect.');
 			setSuccess('Mot de passe mis à jour.');
+			toast.showSuccess('Mot de passe mis à jour.');
 			setForm({ current: '', next: '', confirm: '' });
 		} catch (err) {
 			setError(err.message);
+			toast.showError(err.message || 'Mot de passe actuel incorrect.');
 		} finally {
 			setLoading(false);
 		}

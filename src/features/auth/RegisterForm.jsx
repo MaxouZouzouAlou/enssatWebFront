@@ -3,6 +3,7 @@ import Alert from '../../components/Alert.jsx';
 import { PrimaryButton, SecondaryButton } from '../../components/Button.jsx';
 import FormField from '../../components/FormField.jsx';
 import { GOOGLE_AUTH_ENABLED, authClient, registerAccount } from '../../services/auth-client';
+import { useToast } from '../../app/ToastProvider.jsx';
 import AccountTypeToggle from './AccountTypeToggle.jsx';
 import ProfessionalCompanyFields from './ProfessionalCompanyFields.jsx';
 import { hasErrors, normalizeRegisterForm, validateRegisterForm } from './validation';
@@ -26,6 +27,7 @@ const emptyForm = {
 };
 
 export default function RegisterForm({ onSwitchToLogin }) {
+	const toast = useToast();
 	const [accountType, setAccountType] = useState(() => {
 		const saved = window.sessionStorage.getItem(REGISTER_DRAFT_KEY);
 		return saved ? (JSON.parse(saved).accountType || 'particulier') : 'particulier';
@@ -97,6 +99,7 @@ export default function RegisterForm({ onSwitchToLogin }) {
 		setFieldErrors(nextFieldErrors);
 		if (hasErrors(nextFieldErrors)) {
 			setError('Corrigez les champs indiques.');
+			toast.showError('Corrigez les champs indiques.');
 			return;
 		}
 
@@ -115,8 +118,10 @@ export default function RegisterForm({ onSwitchToLogin }) {
 				window.sessionStorage.setItem(verificationEmailStorageKey, normalizedForm.email);
 			}
 			setSuccess(normalizedForm.email);
+			toast.showSuccess('Inscription enregistree. Verifiez votre email.');
 		} catch (registerError) {
 			setError(registerError.message);
+			toast.showError(registerError.message || 'Inscription impossible.');
 		} finally {
 			setLoading(false);
 		}
@@ -132,7 +137,9 @@ export default function RegisterForm({ onSwitchToLogin }) {
 		});
 		if (authError) {
 			setGoogleLoading(false);
-			setError(authError.message || 'Inscription Google indisponible.');
+			const message = authError.message || 'Inscription Google indisponible.';
+			setError(message);
+			toast.showError(message);
 		}
 	};
 

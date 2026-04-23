@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from 'react-router';
 import { ActionButton } from '../components/Button.jsx';
 import PickupRouteMap from '../features/pickup-route/PickupRouteMap.jsx';
@@ -6,6 +6,7 @@ import PageShell from '../components/layout/PageShell.jsx';
 import SectionHeader from '../components/layout/SectionHeader.jsx';
 import SurfaceCard from '../components/layout/SurfaceCard.jsx';
 import { fetchOrderById } from '../services/orders-client.js';
+import { queryKeys } from '../utils/queryKeys.js';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:49161';
 
@@ -37,38 +38,54 @@ const PAYMENT_LABELS = {
 	apple_pay: 'Apple Pay'
 };
 
+const STATUS_LABELS = {
+	en_attente: 'En attente',
+	en_cours: 'En cours',
+	expediee: 'Expédiée',
+	livree: 'Livrée',
+	annulee: 'Annulée',
+};
+
+const STATUS_STYLES = {
+	en_attente: 'bg-amber-100 text-amber-700',
+	en_cours: 'bg-blue-100 text-blue-700',
+	expediee: 'bg-indigo-100 text-indigo-700',
+	livree: 'bg-primary-100 text-primary-700',
+	annulee: 'bg-red-100 text-red-700',
+};
+
+const DELIVERY_LABELS = {
+	domicile: 'Livraison à domicile',
+	point_relais: 'Point relais',
+	lieu_vente: 'Retrait en point de vente',
+};
+
 function formatPaymentLabel(modePaiement) {
-	if (PAYMENT_LABELS[modePaiement]) return PAYMENT_LABELS[modePaiement];
-	return modePaiement || 'Non renseigné';
+	return PAYMENT_LABELS[modePaiement] || modePaiement || 'Non renseigné';
+}
+
+function formatStatus(status) {
+	return STATUS_LABELS[status] || status || 'Inconnu';
+}
+
+function formatDeliveryMode(mode) {
+	return DELIVERY_LABELS[mode] || mode || 'Non renseigné';
 }
 
 export default function OrderDetailPage() {
 	const navigate = useNavigate();
 	const { idCommande } = useParams();
-	const [data, setData] = useState(null);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState('');
+	const {
+		data,
+		error,
+		isLoading,
+	} = useQuery({
+		queryKey: queryKeys.orders.detail(idCommande),
+		queryFn: () => fetchOrderById(idCommande),
+		enabled: Boolean(idCommande),
+	});
 
-	useEffect(() => {
-		let ignore = false;
-
-		fetchOrderById(idCommande)
-			.then((response) => {
-				if (!ignore) setData(response);
-			})
-			.catch((err) => {
-				if (!ignore) setError(err.message || 'Impossible de charger cette commande.');
-			})
-			.finally(() => {
-				if (!ignore) setLoading(false);
-			});
-
-		return () => {
-			ignore = true;
-		};
-	}, [idCommande]);
-
-	if (loading) {
+	if (isLoading) {
 		return (
 			<PageShell contentClassName="max-w-5xl">
 				<SurfaceCard className="text-center">
@@ -82,7 +99,7 @@ export default function OrderDetailPage() {
 		return (
 			<PageShell contentClassName="max-w-5xl">
 				<SurfaceCard className="text-center">
-					<p className="text-sm font-semibold text-red-700">{error || 'Commande introuvable.'}</p>
+					<p className="text-sm font-semibold text-red-700">{error?.message || 'Commande introuvable.'}</p>
 					<div className="mt-4 flex justify-center gap-3">
 						<ActionButton type="button" variant="secondary" onClick={() => navigate('/commandes')}>
 							Retour à l'historique
@@ -113,9 +130,11 @@ export default function OrderDetailPage() {
 					<div>
 						<p className="text-xs font-semibold uppercase tracking-[0.12em] text-primary-700">Récapitulatif</p>
 						<p className="mt-2 text-lg font-semibold text-secondary-900">{formatDate(order.dateCommande)}</p>
-						<p className="mt-1 text-sm text-secondary-600">{order.modeLivraison || 'Mode de livraison non renseigné'}</p>
+						<p className="mt-1 text-sm text-secondary-600">{formatDeliveryMode(order.modeLivraison)}</p>
 						<p className="mt-1 text-sm text-secondary-600">Paiement : {formatPaymentLabel(order.modePaiement)}</p>
-						<p className="mt-1 text-sm text-secondary-600">Statut : {order.status}</p>
+						<span className={`mt-2 inline-block rounded-full px-3 py-1 text-xs font-semibold ${STATUS_STYLES[order.status] || 'bg-neutral-100 text-secondary-600'}`}>
+							{formatStatus(order.status)}
+						</span>
 					</div>
 					<div className="flex flex-col items-start gap-3 sm:items-end">
 						<p className="text-2xl font-bold text-secondary-900">{Number(order.prixTotal || 0).toFixed(2)} €</p>

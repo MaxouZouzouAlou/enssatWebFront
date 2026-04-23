@@ -17,6 +17,12 @@ function Header({
   cartItems = [],
   isAuthenticated = false,
   isProfessional = false,
+  isSuperAdmin = false,
+  notifications = [],
+  notificationCount = 0,
+  onMarkNotificationRead,
+  onMarkAllNotificationsRead,
+  onDeleteNotification,
   removeFromCart = () => {},
   onSignOut = () => {},
   updateQuantity = () => {},
@@ -54,7 +60,14 @@ function Header({
     if (name === 'notifications') {
       return (
         <HeaderPopover title="Notifications" mobile={mobile}>
-          <NotificationsMenu isAuthenticated={isAuthenticated} />
+          <NotificationsMenu
+            isAuthenticated={isAuthenticated}
+            notifications={notifications}
+            onMarkRead={onMarkNotificationRead}
+            onMarkAllRead={onMarkAllNotificationsRead}
+            onDelete={onDeleteNotification}
+            onClose={close}
+          />
         </HeaderPopover>
       );
     }
@@ -65,6 +78,7 @@ function Header({
           <AccountMenu
             isAuthenticated={isAuthenticated}
             isProfessional={isProfessional}
+            isSuperAdmin={isSuperAdmin}
             onClose={close}
             onSignOut={onSignOut}
           />
@@ -98,6 +112,7 @@ function Header({
         active={activePopover === 'notifications'}
         icon="notifications"
         label="Notifications"
+        badge={notificationCount}
         onClick={() => togglePopover('notifications')}
         className={getActionIconClass('notifications')}
       />
@@ -135,7 +150,7 @@ function Header({
   return (
     <header ref={headerRef} className="sticky top-0 z-40 px-4 py-3">
       {/* Main bar */}
-      <div className="mx-auto flex max-w-6xl items-center justify-between rounded-2xl border border-neutral-200 bg-neutral-50/85 px-4 py-2.5 shadow-[0_18px_45px_rgba(29,52,34,.12)] backdrop-blur-md">
+      <div className="mx-auto flex w-[min(1280px,calc(100%-2rem))] items-center justify-between rounded-2xl border border-neutral-200 bg-neutral-50/85 px-4 py-2.5 shadow-[0_18px_45px_rgba(29,52,34,.12)] backdrop-blur-md">
 
         {/* Left — logo + name */}
         <button
@@ -180,7 +195,7 @@ function Header({
 
       {/* Mobile dropdown */}
       {menuOpen && (
-        <div className="mx-auto mt-3 flex max-w-6xl flex-col rounded-2xl border border-neutral-200 bg-neutral-50/95 px-4 py-3 shadow-[0_24px_70px_rgba(29,52,34,.18)] backdrop-blur-md md:hidden">
+        <div className="mx-auto mt-3 flex w-[min(1280px,calc(100%-2rem))] flex-col rounded-2xl border border-neutral-200 bg-neutral-50/95 px-4 py-3 shadow-[0_24px_70px_rgba(29,52,34,.18)] backdrop-blur-md md:hidden">
           <div className="flex items-center justify-end gap-1">
             {renderHeaderActions({ mobile: true })}
           </div>

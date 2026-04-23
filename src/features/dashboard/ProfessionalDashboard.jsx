@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
 	Area,
 	AreaChart,
@@ -22,11 +23,13 @@ import PageShell from '../../components/layout/PageShell.jsx';
 import SectionHeader from '../../components/layout/SectionHeader.jsx';
 import SurfaceCard from '../../components/layout/SurfaceCard.jsx';
 import {
-	downloadOrderInvoice,
 	downloadProfessionalSalesReport,
 	fetchProfessionalDashboard,
 } from '../../services/dashboard-client';
 import { getProductsForProfessional, createProductForProfessional, updateProductForProfessional, deleteProductForProfessional } from '../../services/professionalProducts';
+import { downloadOrderInvoice, fetchOrderHistory } from '../../services/orders-client.js';
+import { useToast } from '../../app/ToastProvider.jsx';
+import { queryKeys } from '../../utils/queryKeys.js';
 
 const euro = new Intl.NumberFormat('fr-FR', { currency: 'EUR', style: 'currency' });
 const number = new Intl.NumberFormat('fr-FR');
@@ -83,16 +86,13 @@ export default function ProfessionalDashboard({
 	selectedCompany = null,
 	onSelectCompany
 }) {
+	const toast = useToast();
+	const queryClient = useQueryClient();
 	const isProfessional = accountType === 'professionnel' || accountType === 'pro';
 	const selectedCompanyId = selectedCompany?.id ?? null;
-	const [dashboard, setDashboard] = useState(null);
-	const [loading, setLoading] = useState(false);
-	const [error, setError] = useState('');
 	const [documentMessage, setDocumentMessage] = useState('');
 
 // Professional products management: hooks must be declared before any conditional returns
-const [myProducts, setMyProducts] = useState([]);
-const [loadingProducts, setLoadingProducts] = useState(false);
 const [productError, setProductError] = useState('');
 
 const [newProduct, setNewProduct] = useState({ nomProduit: '', prix: '', unitaireOuKilo: 1, stock: 0, nature: 'Autre', bio: false, tva: 0, reductionPro: 0, image: null });
@@ -124,49 +124,51 @@ useEffect(() => {
 const submitNewProduct = async (e) => {
 	e.preventDefault();
 	try {
-		await createProductForProfessional(professionalId, newProduct, selectedCompanyId);
-		const list = await getProductsForProfessional(professionalId, selectedCompanyId);
-		setMyProducts(list || []);
+		await createProductMutation.mutateAsync(newProduct);
 		setNewProduct({ nomProduit: '', prix: '', unitaireOuKilo: 1, stock: 0, nature: 'Autre', bio: false, tva: 0, reductionPro: 0, image: null });
+		toast.showSuccess('Produit ajoute au catalogue.');
 	} catch (err) {
-		setProductError(err.message || 'Erreur creation produit');
+		const message = err.message || 'Erreur creation produit';
+		setProductError(message);
+		toast.showError(message);
 	}
 };
 
-useEffect(() => {
-    if (!isProfessional || !professionalId || !selectedCompanyId) return;
-    let ignore = false;
-    setLoadingProducts(true);
-    setProductError('');
-    getProductsForProfessional(professionalId, selectedCompanyId)
-        .then((data) => { if (!ignore) setMyProducts(data || []); })
-        .catch((err) => { if (!ignore) setProductError(err.message || 'Erreur'); })
-        .finally(() => { if (!ignore) setLoadingProducts(false); });
-    return () => { ignore = true; };
-}, [isProfessional, professionalId, selectedCompanyId]);
+	const dashboardQuery = useQuery({
+		queryKey: queryKeys.dashboard.professional(professionalId, selectedCompanyId),
+		queryFn: () => fetchProfessionalDashboard(professionalId, selectedCompanyId),
+		enabled: Boolean(isProfessional && professionalId && selectedCompanyId),
+	});
+	const productsQuery = useQuery({
+		queryKey: queryKeys.products.professionalList(professionalId, selectedCompanyId),
+		queryFn: () => getProductsForProfessional(professionalId, selectedCompanyId),
+		enabled: Boolean(isProfessional && professionalId && selectedCompanyId),
+	});
+	const purchaseOrdersQuery = useQuery({
+		queryKey: queryKeys.orders.history,
+		queryFn: fetchOrderHistory,
+		enabled: Boolean(isProfessional && professionalId),
+	});
 
-	useEffect(() => {
-		if (!isProfessional || !professionalId || !selectedCompanyId) return;
+	const refreshProfessionalData = async () => {
+		await Promise.all([
+			queryClient.invalidateQueries({ queryKey: queryKeys.products.professionalList(professionalId, selectedCompanyId) }),
+			queryClient.invalidateQueries({ queryKey: queryKeys.dashboard.professional(professionalId, selectedCompanyId) }),
+		]);
+	};
 
-		let ignore = false;
-		setLoading(true);
-		setError('');
-
-		fetchProfessionalDashboard(professionalId, selectedCompanyId)
-			.then((data) => {
-				if (!ignore) setDashboard(data);
-			})
-			.catch((err) => {
-				if (!ignore) setError(err.message);
-			})
-			.finally(() => {
-				if (!ignore) setLoading(false);
-			});
-
-		return () => {
-			ignore = true;
-		};
-	}, [isProfessional, professionalId, selectedCompanyId]);
+	const createProductMutation = useMutation({
+		mutationFn: (payload) => createProductForProfessional(professionalId, payload, selectedCompanyId),
+		onSuccess: refreshProfessionalData,
+	});
+	const updateProductMutation = useMutation({
+		mutationFn: ({ productId, payload }) => updateProductForProfessional(professionalId, productId, payload, selectedCompanyId),
+		onSuccess: refreshProfessionalData,
+	});
+	const deleteProductMutation = useMutation({
+		mutationFn: (productId) => deleteProductForProfessional(professionalId, productId, selectedCompanyId),
+		onSuccess: refreshProfessionalData,
+	});
 
 	const downloadSalesReport = async () => {
 		if (!professionalId || !selectedCompanyId) return;
@@ -174,19 +176,25 @@ useEffect(() => {
 		try {
 			await downloadProfessionalSalesReport(professionalId, 90, selectedCompanyId);
 			setDocumentMessage('Rapport des ventes telecharge.');
+			toast.showSuccess('Rapport des ventes telecharge.');
 		} catch (err) {
-			setDocumentMessage(err.message || 'Impossible de telecharger le rapport.');
+			const message = err.message || 'Impossible de telecharger le rapport.';
+			setDocumentMessage(message);
+			toast.showError(message);
 		}
 	};
 
 	const downloadInvoice = async (idCommande) => {
-		if (!professionalId || !selectedCompanyId) return;
+		if (!professionalId) return;
 		setDocumentMessage('');
 		try {
-			await downloadOrderInvoice(professionalId, idCommande, selectedCompanyId);
+			await downloadOrderInvoice(idCommande);
 			setDocumentMessage(`Facture PDF commande #${idCommande} telechargee.`);
+			toast.showSuccess(`Facture PDF commande #${idCommande} telechargee.`);
 		} catch (err) {
-			setDocumentMessage(err.message || 'Impossible de telecharger cette facture.');
+			const message = err.message || 'Impossible de telecharger cette facture.';
+			setDocumentMessage(message);
+			toast.showError(message);
 		}
 	};
 
@@ -212,19 +220,28 @@ useEffect(() => {
 		return (
 			<RestrictedDashboardState
 				title="Entreprise indisponible"
-				message="Selectionnez une entreprise rattachee a votre compte pour afficher les statistiques et le catalogue associes."
+				message="Sélectionnez une entreprise rattachée à votre compte pour afficher les statistiques et le catalogue associés."
 			/>
 		);
 	}
 
+	const dashboard = dashboardQuery.data || null;
+	const myProducts = productsQuery.data || [];
+	const purchaseOrders = purchaseOrdersQuery.data?.items || [];
+	const loading = dashboardQuery.isLoading;
+	const loadingProducts = productsQuery.isLoading;
+	const loadingPurchaseOrders = purchaseOrdersQuery.isLoading;
+	const error = dashboardQuery.error?.message || '';
+	const purchaseOrdersError = purchaseOrdersQuery.error?.message || '';
+	const currentProductError = productError || productsQuery.error?.message || '';
 	const metrics = dashboard?.metrics || {};
 	const monthlyRevenue = dashboard?.charts?.monthlyRevenue || [];
 	const productSales = dashboard?.charts?.topProducts || [];
 	const channelSplit = dashboard?.charts?.channels || [];
 	const topCustomers = dashboard?.topCustomers || [];
-	const recentOrders = dashboard?.recentOrders || [];
+	const recentOrders = purchaseOrders;
 	const metricCards = [
-		['Chiffre d affaires (30j)', euro.format(metrics.revenue30d || 0), formatTrend(metrics.revenueTrendPct), 'text-primary-600'],
+		["Chiffre d'affaires (30j)", euro.format(metrics.revenue30d || 0), formatTrend(metrics.revenueTrendPct), 'text-primary-600'],
 		['Nombre de ventes', number.format(metrics.sales30d || 0), formatTrend(metrics.salesTrendPct), 'text-primary-600'],
 		['Panier moyen', euro.format(metrics.averageBasket30d || 0), `${number.format(metrics.orders30d || 0)} commande(s)`, 'text-primary-600'],
 		['Taux de rupture', `${Number(metrics.outOfStockRatePct || 0).toFixed(1)}%`, `${number.format(metrics.outOfStockProducts || 0)} produit(s) a surveiller`, 'text-tertiary-500'],
@@ -241,8 +258,8 @@ useEffect(() => {
 				<div className="flex flex-col justify-between gap-6 xl:flex-row xl:items-start">
 				<SectionHeader eyebrow="Espace pro" title="Dashboard professionnel" className="md:max-w-3xl">
 					<p>
-						Suivez vos performances en temps reel: chiffre d affaires, commandes,
-						produits les plus vendus et habitudes d achat.
+						Suivez vos performances en temps réel : chiffre d'affaires, commandes,
+						produits les plus vendus et habitudes d'achat.
 					</p>
 					{selectedCompany ? (
 						<div className="mt-4 grid gap-3 rounded-[1.5rem] border border-white/70 bg-white/80 p-4 shadow-[0_12px_30px_rgba(34,51,35,.08)] backdrop-blur sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
@@ -346,8 +363,8 @@ useEffect(() => {
 					<DashboardPanelHeading eyebrow="Catalogue" title="Mes produits en vente" description="Gerez vos produits et ajoutez-en de nouveaux" />
 					{loadingProducts ? (
 						<div className="text-sm text-secondary-600">Chargement des produits...</div>
-					) : productError ? (
-						<div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">Erreur: {productError}</div>
+					) : currentProductError ? (
+						<div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">Erreur: {currentProductError}</div>
 					) : (
 						<div className="grid gap-5 xl:grid-cols-[1.2fr_.9fr]">
 							<div className="rounded-2xl border border-neutral-200 bg-white/90 p-4 shadow-sm">
@@ -395,19 +412,26 @@ useEffect(() => {
 														<button type="button" className="rounded-xl bg-neutral-200 px-4 py-2 text-sm font-semibold text-secondary-700 transition hover:bg-neutral-300" onClick={() => { setEditingId(null); setEditingValues({}); }}>Annuler</button>
 														<button type="button" className="rounded-xl bg-primary-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-700" onClick={async () => {
 															try {
-																await updateProductForProfessional(professionalId, p.idProduit || p.id, editingValues, selectedCompanyId);
-																const list = await getProductsForProfessional(professionalId, selectedCompanyId);
-																setMyProducts(list || []);
+																await updateProductMutation.mutateAsync({ productId: p.idProduit || p.id, payload: editingValues });
 																setEditingId(null);
-															} catch (err) { setProductError(err.message || 'Erreur mise à jour'); }
+																setEditingValues({});
+																toast.showSuccess('Produit mis à jour.');
+															} catch (err) {
+																const message = err.message || 'Erreur mise à jour';
+																setProductError(message);
+																toast.showError(message);
+															}
 														}}>Sauvegarder</button>
 														<button type="button" className="rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700" onClick={async () => {
 															if (!window.confirm('Supprimer ce produit ?')) return;
 															try {
-																await deleteProductForProfessional(professionalId, p.idProduit || p.id, selectedCompanyId);
-																const list = await getProductsForProfessional(professionalId, selectedCompanyId);
-																setMyProducts(list || []);
-															} catch (err) { setProductError(err.message || 'Erreur suppression'); }
+																await deleteProductMutation.mutateAsync(p.idProduit || p.id);
+																toast.showSuccess('Produit supprime.');
+															} catch (err) {
+																const message = err.message || 'Erreur suppression';
+																setProductError(message);
+																toast.showError(message);
+															}
 														}}>Supprimer</button>
 													</div>
 												</div>
@@ -451,7 +475,7 @@ useEffect(() => {
 											Crée une nouvelle fiche produit pour {selectedCompany?.nom} avec image, stock et nature.
 										</p>
 									</div>
-									{productError ? <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{productError}</div> : null}
+									{currentProductError ? <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{currentProductError}</div> : null}
 									<div className="grid grid-cols-1 gap-3">
 										<div>
 											<label className="block text-xs font-semibold text-neutral-700 mb-1">Nom du produit</label>
@@ -524,9 +548,11 @@ useEffect(() => {
 								)}
 							</SurfaceCard>
 				<SurfaceCard className="col-span-12 border border-neutral-200 p-5">
-					<DashboardPanelHeading eyebrow="Documents" title="Documents de commande" description="Factures telechargeables" />
-					{recentOrders.length === 0 ? (
-						<p className="text-sm text-secondary-600">Aucune commande recente pour generer des factures.</p>
+					<DashboardPanelHeading eyebrow="Documents" title="Factures d'achat du compte" description="Toutes les factures des commandes passées avec ce compte professionnel" />
+					{loadingPurchaseOrders ? <p className="text-sm text-secondary-600">Chargement des factures...</p> : null}
+					{purchaseOrdersError ? <p className="text-sm font-semibold text-red-700">{purchaseOrdersError}</p> : null}
+					{!loadingPurchaseOrders && !purchaseOrdersError && recentOrders.length === 0 ? (
+						<p className="text-sm text-secondary-600">Aucune commande d'achat disponible pour générer des factures.</p>
 					) : (
 						<div className="space-y-2">
 							{recentOrders.map((order) => (
@@ -539,7 +565,7 @@ useEffect(() => {
 										<p className="text-sm text-secondary-600">
 											{new Date(order.dateCommande).toLocaleDateString('fr-FR')} • {order.modeLivraison || 'non renseigne'} • {order.status}
 										</p>
-										<p className="mt-1 text-sm font-medium text-secondary-700">Total vendeur: {euro.format(order.total || 0)}</p>
+										<p className="mt-1 text-sm font-medium text-secondary-700">Total commande: {euro.format(order.prixTotal || 0)}</p>
 									</div>
 									<ActionButton className="h-10" onClick={() => downloadInvoice(order.idCommande)} type="button">
 										Telecharger facture

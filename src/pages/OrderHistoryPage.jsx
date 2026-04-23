@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
 import { ActionButton } from '../components/Button.jsx';
 import PageShell from '../components/layout/PageShell.jsx';
@@ -12,6 +13,37 @@ import {
 	runRecurringOrderNow,
 	updateRecurringOrder
 } from '../services/orders-client.js';
+import { queryKeys } from '../utils/queryKeys.js';
+
+const STATUS_LABELS = {
+	en_attente: 'En attente',
+	en_cours: 'En cours',
+	expediee: 'Expédiée',
+	livree: 'Livrée',
+	annulee: 'Annulée',
+};
+
+const STATUS_STYLES = {
+	en_attente: 'bg-amber-100 text-amber-700',
+	en_cours: 'bg-blue-100 text-blue-700',
+	expediee: 'bg-indigo-100 text-indigo-700',
+	livree: 'bg-primary-100 text-primary-700',
+	annulee: 'bg-red-100 text-red-700',
+};
+
+const DELIVERY_LABELS = {
+	domicile: 'Livraison à domicile',
+	point_relais: 'Point relais',
+	lieu_vente: 'Retrait en point de vente',
+};
+
+function formatStatus(status) {
+	return STATUS_LABELS[status] || status || 'Inconnu';
+}
+
+function formatDeliveryMode(mode) {
+	return DELIVERY_LABELS[mode] || mode || 'Mode de livraison non renseigné';
+}
 
 const FREQUENCY_OPTIONS = [
 	{ value: 'weekly', label: 'Chaque semaine' },
@@ -32,46 +64,63 @@ function formatDate(value) {
 
 export default function OrderHistoryPage() {
 	const navigate = useNavigate();
-	const [orders, setOrders] = useState([]);
-	const [recurringOrders, setRecurringOrders] = useState([]);
+	const queryClient = useQueryClient();
 	const [subscriptionDrafts, setSubscriptionDrafts] = useState({});
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState('');
 	const [actionError, setActionError] = useState('');
 	const [busyKey, setBusyKey] = useState('');
 
-	const loadData = async () => {
-		const [ordersData, recurringData] = await Promise.all([
-			fetchOrderHistory(),
-			fetchRecurringOrders()
+	const {
+		data: ordersData,
+		error: ordersError,
+		isLoading: ordersLoading,
+	} = useQuery({
+		queryKey: queryKeys.orders.history,
+		queryFn: fetchOrderHistory,
+	});
+	const {
+		data: recurringData,
+		error: recurringError,
+		isLoading: recurringLoading,
+	} = useQuery({
+		queryKey: queryKeys.orders.recurring,
+		queryFn: fetchRecurringOrders,
+	});
+
+	const orders = ordersData?.items || [];
+	const recurringOrders = recurringData?.items || [];
+	const loading = ordersLoading || recurringLoading;
+	const error = ordersError?.message || recurringError?.message || '';
+
+	const invalidateOrders = async () => {
+		await Promise.all([
+			queryClient.invalidateQueries({ queryKey: queryKeys.orders.history }),
+			queryClient.invalidateQueries({ queryKey: queryKeys.orders.recurring }),
 		]);
-		setOrders(ordersData?.items || []);
-		setRecurringOrders(recurringData?.items || []);
 	};
 
-	useEffect(() => {
-		let ignore = false;
-
-		loadData()
-			.catch((err) => {
-				if (!ignore) setError(err.message || 'Impossible de charger vos commandes.');
-			})
-			.finally(() => {
-				if (!ignore) setLoading(false);
-			});
-
-		return () => {
-			ignore = true;
-		};
-	}, []);
+	const createRecurringMutation = useMutation({
+		mutationFn: createRecurringOrder,
+		onSuccess: invalidateOrders,
+	});
+	const updateRecurringMutation = useMutation({
+		mutationFn: ({ idAuto, payload }) => updateRecurringOrder(idAuto, payload),
+		onSuccess: invalidateOrders,
+	});
+	const runNowMutation = useMutation({
+		mutationFn: runRecurringOrderNow,
+		onSuccess: invalidateOrders,
+	});
+	const deleteRecurringMutation = useMutation({
+		mutationFn: deleteRecurringOrder,
+		onSuccess: invalidateOrders,
+	});
 
 	const handleCreateRecurring = async (idCommande) => {
 		const frequence = subscriptionDrafts[idCommande] || 'weekly';
 		setActionError('');
 		setBusyKey(`create-${idCommande}`);
 		try {
-			await createRecurringOrder({ idRefCommande: idCommande, frequence });
-			await loadData();
+			await createRecurringMutation.mutateAsync({ idRefCommande: idCommande, frequence });
 		} catch (createError) {
 			setActionError(createError.message || 'Impossible de créer la commande récurrente.');
 		} finally {
@@ -83,8 +132,7 @@ export default function OrderHistoryPage() {
 		setActionError('');
 		setBusyKey(`toggle-${item.idAuto}`);
 		try {
-			await updateRecurringOrder(item.idAuto, { estActif: !item.estActif });
-			await loadData();
+			await updateRecurringMutation.mutateAsync({ idAuto: item.idAuto, payload: { estActif: !item.estActif } });
 		} catch (toggleError) {
 			setActionError(toggleError.message || 'Impossible de modifier cet abonnement.');
 		} finally {
@@ -96,8 +144,7 @@ export default function OrderHistoryPage() {
 		setActionError('');
 		setBusyKey(`freq-${item.idAuto}`);
 		try {
-			await updateRecurringOrder(item.idAuto, { frequence });
-			await loadData();
+			await updateRecurringMutation.mutateAsync({ idAuto: item.idAuto, payload: { frequence } });
 		} catch (freqError) {
 			setActionError(freqError.message || 'Impossible de changer la fréquence.');
 		} finally {
@@ -109,8 +156,7 @@ export default function OrderHistoryPage() {
 		setActionError('');
 		setBusyKey(`run-${item.idAuto}`);
 		try {
-			await runRecurringOrderNow(item.idAuto);
-			await loadData();
+			await runNowMutation.mutateAsync(item.idAuto);
 		} catch (runError) {
 			setActionError(runError.message || 'Impossible de lancer la commande récurrente.');
 		} finally {
@@ -122,8 +168,7 @@ export default function OrderHistoryPage() {
 		setActionError('');
 		setBusyKey(`delete-${item.idAuto}`);
 		try {
-			await deleteRecurringOrder(item.idAuto);
-			await loadData();
+			await deleteRecurringMutation.mutateAsync(item.idAuto);
 		} catch (deleteError) {
 			setActionError(deleteError.message || 'Impossible de supprimer cet abonnement.');
 		} finally {
@@ -163,9 +208,10 @@ export default function OrderHistoryPage() {
 									<div>
 										<p className="text-sm font-semibold uppercase tracking-[0.12em] text-primary-700">Commande #{order.idCommande}</p>
 										<p className="mt-2 text-lg font-semibold text-secondary-900">{formatDate(order.dateCommande)}</p>
-										<p className="mt-1 text-sm text-secondary-600">
-											{order.modeLivraison || 'Mode de livraison non renseigné'} • {order.status}
-										</p>
+										<p className="mt-1 text-sm text-secondary-600">{formatDeliveryMode(order.modeLivraison)}</p>
+										<span className={`mt-1 inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_STYLES[order.status] || 'bg-neutral-100 text-secondary-600'}`}>
+											{formatStatus(order.status)}
+										</span>
 									</div>
 									<div className="flex flex-col items-start gap-2 sm:items-end">
 										<p className="text-lg font-bold text-secondary-900">{Number(order.prixTotal || 0).toFixed(2)} €</p>

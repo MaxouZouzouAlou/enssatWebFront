@@ -12,7 +12,7 @@ export async function fetchMyLoyalty() {
   const response = await fetch(`${API_BASE_URL}/loyalty/me`, {
     credentials: 'include',
   });
-  return parseResponse(response, 'Impossible de charger la fidelite.');
+  return parseResponse(response, 'Impossible de charger la fidélité.');
 }
 
 export async function claimLoyaltyChallenge(code) {
@@ -23,7 +23,7 @@ export async function claimLoyaltyChallenge(code) {
       'Content-Type': 'application/json',
     },
   });
-  return parseResponse(response, 'Impossible de valider le defi.');
+  return parseResponse(response, 'Impossible de valider le défi.');
 }
 
 export async function redeemVoucher(pointsToSpend = 1000) {

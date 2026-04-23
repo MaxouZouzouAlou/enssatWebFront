@@ -138,7 +138,7 @@ function AchatPage() {
 				<p>Produits frais, de saison et proposés par les producteurs référencés.</p>
 			</SectionHeader>
 			<div className="mt-10 grid gap-6 xl:grid-cols-[2fr_1fr]">
-				<ProductGrid products={products} addToCart={addToCart} onOpenReviews={loadReviews} onOpenProduct={openProduct} />
+				<ProductGrid products={products} addToCart={addToCart} onOpenProduct={openProduct} />
 
 				<SurfaceCard className="h-fit p-4">
 					<h2 className="text-lg font-semibold text-secondary-900">Avis et notes</h2>

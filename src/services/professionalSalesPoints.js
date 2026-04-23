@@ -48,7 +48,7 @@ export async function createCompanySalesPoint(idProfessionnel, idEntreprise, pay
 		}
 	);
 
-	return parseJsonResponse(response, 'Impossible de creer ce point de vente.');
+	return parseJsonResponse(response, 'Impossible de créer ce point de vente.');
 }
 
 export async function detachCompanySalesPoint(idProfessionnel, idEntreprise, idLieu) {
@@ -62,6 +62,6 @@ export async function detachCompanySalesPoint(idProfessionnel, idEntreprise, idL
 
 	if (!response.ok) {
 		const data = await response.json().catch(() => ({}));
-		throw new Error(data.error || 'Impossible de detacher ce point de vente.');
+		throw new Error(data.error || 'Impossible de détacher ce point de vente.');
 	}
 }

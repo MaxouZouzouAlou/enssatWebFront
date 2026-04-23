@@ -51,7 +51,7 @@ export async function fetchAddressSuggestions(query, { limit = 5, signal } = {})
 	const data = await response.json().catch(() => ({}));
 
 	if (!response.ok || data?.status !== 'OK') {
-		throw new Error('Impossible de charger les suggestions d adresse.');
+		throw new Error("Impossible de charger les suggestions d'adresse.");
 	}
 
 	return (Array.isArray(data.results) ? data.results : [])

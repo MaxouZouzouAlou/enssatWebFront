@@ -6,7 +6,15 @@ import PageShell from '../components/layout/PageShell.jsx';
 import SectionHeader from '../components/layout/SectionHeader.jsx';
 import SoftPanel from '../components/layout/SoftPanel.jsx';
 import SurfaceCard from '../components/layout/SurfaceCard.jsx';
-import { authClient, deletePersonalAccount, requestEmailChange, updatePersonalProfile } from '../services/auth-client.js';
+import {
+	authClient,
+	createProfessionalCompany,
+	deletePersonalAccount,
+	deleteProfessionalCompany,
+	requestEmailChange,
+	updatePersonalProfile
+} from '../services/auth-client.js';
+import { useToast } from '../app/ToastProvider.jsx';
 
 function formatAddress(data) {
 	if (!data) return '';
@@ -39,6 +47,7 @@ function EditableField({ label, value, name, editing, onChange, placeholder = ''
 }
 
 function PasswordBlock() {
+	const toast = useToast();
 	const [form, setForm] = useState({ current: '', next: '', confirm: '' });
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
@@ -59,11 +68,13 @@ function PasswordBlock() {
 
 		if (form.next.length < 8) {
 			setError('Le nouveau mot de passe doit contenir au moins 8 caractères.');
+			toast.showError('Le nouveau mot de passe doit contenir au moins 8 caracteres.');
 			return;
 		}
 
 		if (form.next !== form.confirm) {
 			setError('Les mots de passe ne correspondent pas.');
+			toast.showError('Les mots de passe ne correspondent pas.');
 			return;
 		}
 
@@ -80,9 +91,12 @@ function PasswordBlock() {
 			}
 
 			setSuccess('Mot de passe mis à jour.');
+			toast.showSuccess('Mot de passe mis à jour.');
 			setForm({ current: '', next: '', confirm: '' });
 		} catch (submitError) {
-			setError(submitError.message || 'Impossible de mettre à jour le mot de passe.');
+			const message = submitError.message || 'Impossible de mettre à jour le mot de passe.';
+			setError(message);
+			toast.showError(message);
 		} finally {
 			setLoading(false);
 		}
@@ -202,7 +216,34 @@ function DeleteAccountModal({ open, loading, onCancel, onConfirm }) {
 	);
 }
 
+function DeleteCompanyModal({ company, loading, onCancel, onConfirm }) {
+	if (!company) return null;
+
+	return (
+		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
+			<div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+				<h3 className="text-xl font-semibold text-secondary-900">Supprimer l'entreprise</h3>
+				<p className="mt-3 text-sm text-secondary-700">
+					Vous allez supprimer <span className="font-semibold">{company.nom}</span> de votre compte professionnel.
+				</p>
+				<p className="mt-2 text-sm text-secondary-700">
+					Cette suppression est irréversible et supprimera aussi les produits et données rattachés à cette entreprise.
+				</p>
+				<div className="mt-6 flex gap-2">
+					<ActionButton type="button" variant="light" onClick={onCancel} className="h-10">
+						Annuler
+					</ActionButton>
+					<ActionButton type="button" loading={loading} onClick={onConfirm} variant="danger" className="h-10">
+						Supprimer l'entreprise
+					</ActionButton>
+				</div>
+			</div>
+		</div>
+	);
+}
+
 function EmailChangePanel({ currentEmail, onEmailChangeRequested }) {
+	const toast = useToast();
 	const [newEmail, setNewEmail] = useState('');
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
@@ -215,11 +256,15 @@ function EmailChangePanel({ currentEmail, onEmailChangeRequested }) {
 		setSuccess('');
 		try {
 			const result = await requestEmailChange({ newEmail });
-			setSuccess(result.message || 'Un email de verification a ete envoye a votre nouvelle adresse.');
+			const message = result.message || 'Un email de vérification a été envoyé à votre nouvelle adresse.';
+			setSuccess(message);
+			toast.showSuccess(message);
 			setNewEmail('');
 			await onEmailChangeRequested?.();
 		} catch (submitError) {
-			setError(submitError.message || "Impossible d'initialiser le changement d'email.");
+			const message = submitError.message || "Impossible d'initialiser le changement d'email.";
+			setError(message);
+			toast.showError(message);
 		} finally {
 			setLoading(false);
 		}
@@ -230,11 +275,11 @@ function EmailChangePanel({ currentEmail, onEmailChangeRequested }) {
 			<p className="text-xs font-semibold uppercase tracking-[0.12em] text-primary-700">Email</p>
 			<h3 className="mt-2 text-xl font-semibold text-secondary-900">Changer d'adresse email</h3>
 			<p className="mt-2 text-sm text-secondary-600">
-				L'email n'est pas modifie immediatement. Un lien de verification est envoye a la nouvelle adresse avant toute mise a jour.
+				L'email n'est pas modifié immédiatement. Un lien de vérification est envoyé à la nouvelle adresse avant toute mise à jour.
 			</p>
 			<div className="mt-4 rounded-2xl border border-neutral-200 bg-white px-4 py-3">
 				<p className="text-xs font-semibold uppercase tracking-[0.08em] text-neutral-500">Adresse actuelle</p>
-				<p className="mt-1 text-sm font-medium text-secondary-800">{currentEmail || 'Non renseigne'}</p>
+				<p className="mt-1 text-sm font-medium text-secondary-800">{currentEmail || 'Non renseigné'}</p>
 			</div>
 			{error ? <p className="mt-4 text-sm font-semibold text-red-700">{error}</p> : null}
 			{success ? <p className="mt-4 text-sm font-semibold text-primary-700">{success}</p> : null}
@@ -271,6 +316,7 @@ export default function AccountPage({
 	onProfileRefresh
 }) {
 	const navigate = useNavigate();
+	const toast = useToast();
 	const [editing, setEditing] = useState(false);
 	const [saving, setSaving] = useState(false);
 	const [saveError, setSaveError] = useState('');
@@ -278,6 +324,18 @@ export default function AccountPage({
 	const [deleting, setDeleting] = useState(false);
 	const [deleteError, setDeleteError] = useState('');
 	const [showDeleteModal, setShowDeleteModal] = useState(false);
+	const [companyForm, setCompanyForm] = useState({
+		nom: '',
+		siret: '',
+		adresse_ligne: '',
+		code_postal: '',
+		ville: ''
+	});
+	const [companyError, setCompanyError] = useState('');
+	const [companySuccess, setCompanySuccess] = useState('');
+	const [companySaving, setCompanySaving] = useState(false);
+	const [companyDeleting, setCompanyDeleting] = useState(false);
+	const [companyToDelete, setCompanyToDelete] = useState(null);
 
 	const profileData = useMemo(
 		() => (profile?.particulier || profile?.client || profile?.professionnel || {}),
@@ -320,6 +378,20 @@ export default function AccountPage({
 		}));
 	};
 
+	const onCompanyFieldChange = (event) => {
+		const { name, value } = event.target;
+		setCompanyForm((current) => ({ ...current, [name]: value }));
+	};
+
+	const onSelectSuggestedCompanyAddress = (suggestion) => {
+		setCompanyForm((current) => ({
+			...current,
+			adresse_ligne: suggestion.adresse_ligne,
+			code_postal: suggestion.code_postal,
+			ville: suggestion.ville
+		}));
+	};
+
 	const onSaveProfile = async () => {
 		setSaving(true);
 		setSaveError('');
@@ -336,8 +408,11 @@ export default function AccountPage({
 			await onProfileRefresh?.();
 			setEditing(false);
 			setSaveSuccess('Profil mis à jour.');
+			toast.showSuccess('Profil mis à jour.');
 		} catch (error) {
-			setSaveError(error.message || 'Impossible de mettre à jour le profil.');
+			const message = error.message || 'Impossible de mettre à jour le profil.';
+			setSaveError(message);
+			toast.showError(message);
 		} finally {
 			setSaving(false);
 		}
@@ -373,12 +448,63 @@ export default function AccountPage({
 			} catch {
 				// no-op, session can already be invalidated after account deletion
 			}
+			toast.showSuccess('Compte supprime.');
 			navigate('/', { replace: true });
 		} catch (error) {
-			setDeleteError(error.message || 'Impossible de supprimer le compte.');
+			const message = error.message || 'Impossible de supprimer le compte.';
+			setDeleteError(message);
+			toast.showError(message);
 		} finally {
 			setDeleting(false);
 			setShowDeleteModal(false);
+		}
+	};
+
+	const onCreateCompany = async (event) => {
+		event.preventDefault();
+		setCompanySaving(true);
+		setCompanyError('');
+		setCompanySuccess('');
+
+		try {
+			await createProfessionalCompany(companyForm);
+			await onProfileRefresh?.();
+			setCompanyForm({
+				nom: '',
+				siret: '',
+				adresse_ligne: '',
+				code_postal: '',
+				ville: ''
+			});
+			setCompanySuccess('Entreprise créée et rattachée à votre compte.');
+			toast.showSuccess('Entreprise créée et rattachée à votre compte.');
+		} catch (error) {
+			const message = error.message || "Impossible de créer l'entreprise.";
+			setCompanyError(message);
+			toast.showError(message);
+		} finally {
+			setCompanySaving(false);
+		}
+	};
+
+	const onDeleteCompany = async () => {
+		if (!companyToDelete) return;
+		setCompanyDeleting(true);
+		setCompanyError('');
+		setCompanySuccess('');
+
+		try {
+			await deleteProfessionalCompany(companyToDelete.id);
+			await onProfileRefresh?.();
+			setCompanySuccess('Entreprise supprimee.');
+			toast.showSuccess('Entreprise supprimee.');
+		} catch (error) {
+			const message = error.message || "Impossible de supprimer l'entreprise.";
+			setCompanyError(message);
+			toast.showError(message);
+		} finally {
+			setCompanyDeleting(false);
+			setCompanyToDelete(null);
 		}
 	};
 
@@ -483,14 +609,79 @@ export default function AccountPage({
 				{profile?.professionnel ? (
 					<SoftPanel className="mt-6 p-5">
 						<p className="text-sm font-semibold text-secondary-900">Toutes vos entreprises</p>
-						<p className="mt-1 text-xs text-neutral-600">Cliquez sur une entreprise pour ouvrir son dashboard.</p>
+						<p className="mt-1 text-xs text-neutral-600">Ouvrez le dashboard d'une entreprise, ajoutez-en une nouvelle ou supprimez une entreprise vide.</p>
+						{companyError ? <p className="mt-4 text-sm font-semibold text-red-700">{companyError}</p> : null}
+						{companySuccess ? <p className="mt-4 text-sm font-semibold text-primary-700">{companySuccess}</p> : null}
+						<form className="mt-4 grid gap-4 rounded-2xl border border-neutral-200 bg-white p-4" onSubmit={onCreateCompany}>
+							<div className="grid gap-4 sm:grid-cols-3">
+								<label className="block text-sm font-semibold text-secondary-900 sm:col-span-2">
+									Nom de l'entreprise
+									<input
+										name="nom"
+										value={companyForm.nom}
+										onChange={onCompanyFieldChange}
+										className="mt-2 h-11 w-full rounded-xl border border-neutral-300 bg-white px-4 text-sm"
+										required
+									/>
+								</label>
+								<label className="block text-sm font-semibold text-secondary-900">
+									SIRET
+									<input
+										name="siret"
+										value={companyForm.siret}
+										onChange={onCompanyFieldChange}
+										inputMode="numeric"
+										maxLength={14}
+										pattern="[0-9]{14}"
+										className="mt-2 h-11 w-full rounded-xl border border-neutral-300 bg-white px-4 text-sm"
+										required
+									/>
+								</label>
+								<label className="block text-sm font-semibold text-secondary-900 sm:col-span-3">
+									Adresse de l'entreprise
+									<AddressAutocompleteInput
+										value={companyForm.adresse_ligne}
+										onAddressChange={(nextValue) => setCompanyForm((current) => ({ ...current, adresse_ligne: nextValue }))}
+										onSuggestionSelect={onSelectSuggestedCompanyAddress}
+										className="mt-2 h-11 w-full rounded-xl border border-neutral-300 bg-white px-4 text-sm"
+										placeholder="12 rue des Producteurs"
+									/>
+								</label>
+								<label className="block text-sm font-semibold text-secondary-900">
+									Code postal
+									<input
+										name="code_postal"
+										value={companyForm.code_postal}
+										onChange={onCompanyFieldChange}
+										inputMode="numeric"
+										maxLength={5}
+										pattern="[0-9]{5}"
+										className="mt-2 h-11 w-full rounded-xl border border-neutral-300 bg-white px-4 text-sm"
+										required
+									/>
+								</label>
+								<label className="block text-sm font-semibold text-secondary-900 sm:col-span-2">
+									Ville
+									<input
+										name="ville"
+										value={companyForm.ville}
+										onChange={onCompanyFieldChange}
+										className="mt-2 h-11 w-full rounded-xl border border-neutral-300 bg-white px-4 text-sm"
+										required
+									/>
+								</label>
+							</div>
+							<div className="flex justify-end">
+								<ActionButton type="submit" loading={companySaving} className="h-10">
+									Ajouter une entreprise
+								</ActionButton>
+							</div>
+						</form>
 						<div className="mt-3 grid gap-3 sm:grid-cols-2">
 							{professionalCompanies.map((company) => (
-								<button
-									type="button"
+								<div
 									key={company.id}
-									onClick={() => openCompanyDashboard(company.id)}
-									className="w-full rounded-xl border border-neutral-200 bg-white p-3 text-left hover:border-primary-300 hover:bg-primary-50"
+									className="rounded-xl border border-neutral-200 bg-white p-3"
 								>
 									<p className="text-sm font-semibold text-secondary-900">{company.nom}</p>
 									<p className="mt-1 text-xs font-semibold uppercase tracking-[0.08em] text-neutral-500">SIRET {company.siret}</p>
@@ -498,7 +689,20 @@ export default function AccountPage({
 									<p className="text-sm text-neutral-600">
 										{company.code_postal} {company.ville}
 									</p>
-								</button>
+									<div className="mt-3 flex gap-2">
+										<ActionButton type="button" className="h-10" onClick={() => openCompanyDashboard(company.id)}>
+											Ouvrir le dashboard
+										</ActionButton>
+										<ActionButton
+											type="button"
+											variant="danger"
+											className="h-10"
+											onClick={() => setCompanyToDelete(company)}
+										>
+											Supprimer cette entreprise
+										</ActionButton>
+									</div>
+								</div>
 							))}
 						</div>
 					</SoftPanel>
@@ -521,6 +725,12 @@ export default function AccountPage({
 				loading={deleting}
 				onCancel={() => setShowDeleteModal(false)}
 				onConfirm={onDeleteAccount}
+			/>
+			<DeleteCompanyModal
+				company={companyToDelete}
+				loading={companyDeleting}
+				onCancel={() => setCompanyToDelete(null)}
+				onConfirm={onDeleteCompany}
 			/>
 		</PageShell>
 	);
