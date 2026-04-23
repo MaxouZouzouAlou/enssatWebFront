@@ -36,6 +36,17 @@ export default function AccountPage({ isProfessional = false, profile, profileSt
 						<p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Type de compte</p>
 						<p className="mt-2 text-lg font-semibold text-secondary-900">{profile?.accountType || 'Non renseigne'}</p>
 					</SoftPanel>
+					<SoftPanel
+						as="button"
+						type="button"
+						onClick={() => navigate('/fidelite')}
+						className="text-left hover:bg-primary-50"
+					>
+						<p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Fidelite</p>
+						<p className="mt-2 text-lg font-semibold text-secondary-900">
+							{profile?.particulier?.pointsFidelite ?? 0} points
+						</p>
+					</SoftPanel>
 					<SoftPanel>
 						<p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">Email verifie</p>
 						<p className="mt-2 text-lg font-semibold text-secondary-900">{user.emailVerified ? 'Oui' : 'Non'}</p>

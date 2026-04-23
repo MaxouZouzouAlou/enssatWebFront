@@ -5,7 +5,7 @@ const commonAuthenticatedItems = [
 	{ icon: 'tune', label: 'Paramètres', path: '/compte' },
 	{ icon: 'receipt_long', label: 'Mes commandes', path: '/compte' },
 	{ icon: 'person', label: 'Mon compte', path: '/compte' },
-	{ icon: 'workspace_premium', label: 'Ma fidélité', path: '/compte' },
+	{ icon: 'workspace_premium', label: 'Ma fidélité', path: '/fidelite' },
 ];
 
 export default function AccountMenu({ isAuthenticated, isProfessional, onClose, onSignOut }) {

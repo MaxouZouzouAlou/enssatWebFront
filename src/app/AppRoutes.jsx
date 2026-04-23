@@ -9,19 +9,20 @@ import AchatPage from '../pages/AchatPage.jsx';
 import IncidentTicketsPage from '../pages/IncidentTicketsPage.jsx';
 import HomePage from '../pages/HomePage.jsx';
 import LoginPage from '../pages/LoginPage.jsx';
+import LoyaltyPage from '../pages/LoyaltyPage.jsx';
 import PanierPage from '../pages/PanierPage.jsx';
 import ProfessionalDashboardPage from '../pages/ProfessionalDashboardPage.jsx';
 import RegisterPage from '../pages/RegisterPage.jsx';
 import { authClient } from '../services/auth-client';
 
-const protectedPaths = new Set(['/compte', '/dashboard-producteur', '/tickets-incidents']);
+const protectedPaths = new Set(['/compte', '/fidelite', '/dashboard-producteur', '/tickets-incidents']);
 
 export function getLogoutRedirectPath(pathname) {
 	return protectedPaths.has(pathname) ? '/' : null;
 }
 
-function MarketplaceLayout({ addToCart, cartItems, removeFromCart, updateQuantity }) {
-	return <Outlet context={{ addToCart, cartItems, removeFromCart, updateQuantity }} />;
+function MarketplaceLayout({ addToCart, cartItems, removeFromCart, updateQuantity, profile, isAuthenticated, accountType }) {
+	return <Outlet context={{ addToCart, cartItems, removeFromCart, updateQuantity, profile, isAuthenticated, accountType }} />;
 }
 
 function AuthLayout() {
@@ -119,7 +120,8 @@ export default function AppRoutes() {
 					element={requireProfessional(<ProfessionalDashboardPage accountType={accountType} professionalId={professionalId} />)}
 				/>
 				<Route path="/tickets-incidents" element={requireAuth(<IncidentTicketsPage />)} />
-				<Route element={<MarketplaceLayout addToCart={addToCart} cartItems={cartItems} removeFromCart={removeFromCart} updateQuantity={updateQuantity} />}>
+				<Route path="/fidelite" element={requireAuth(<LoyaltyPage />)} />
+				<Route element={<MarketplaceLayout addToCart={addToCart} cartItems={cartItems} removeFromCart={removeFromCart} updateQuantity={updateQuantity} profile={profile} isAuthenticated={isAuthenticated} accountType={accountType} />}>
 					<Route path="/achat" element={<AchatPage />} />
 					<Route path="/panier" element={<PanierPage />} />
 				</Route>

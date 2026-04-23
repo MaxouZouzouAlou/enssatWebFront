@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export default function ProductCard({ product, onAdd = () => {} }) {
+export default function ProductCard({ product, onAdd = () => {}, onOpenReviews = () => {} }) {
   const name = product.nom ?? product.name ?? product.title ?? 'Sans nom';
   const priceRaw = product.prix ?? product.price;
   const price = priceRaw != null && priceRaw !== '' ? Number(priceRaw).toFixed(2) : null;
@@ -8,6 +8,10 @@ export default function ProductCard({ product, onAdd = () => {} }) {
   const stock = product.stock ?? null;
   const bio = product.bio === 1 || product.bio === '1' || product.bio === true;
   const visible = product.visible === 1 || product.visible === '1' || product.visible === true;
+  const noteMoyenneProduit = Number(product.noteMoyenneProduit ?? 0);
+  const nombreAvisProduit = Number(product.nombreAvisProduit ?? 0);
+  const noteMoyenneProducteur = Number(product.noteMoyenneProducteur ?? 0);
+  const nombreAvisProducteur = Number(product.nombreAvisProducteur ?? 0);
 
   return (
     <article
@@ -34,8 +38,27 @@ export default function ProductCard({ product, onAdd = () => {} }) {
         {!visible && <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded">Masqué</span>}
       </div>
 
-      <div className="mt-4 flex items-center justify-between">
+      <div className="mt-3 space-y-1 text-xs text-gray-600">
+        <p>
+          Avis produit: <span className="font-semibold text-gray-800">{noteMoyenneProduit.toFixed(1)}/5</span> ({nombreAvisProduit})
+        </p>
+        <p>
+          Avis producteur: <span className="font-semibold text-gray-800">{noteMoyenneProducteur.toFixed(1)}/5</span> ({nombreAvisProducteur})
+        </p>
+      </div>
+
+      <div className="mt-4 flex items-center justify-between gap-2">
         <p className="text-sm text-gray-600">Stock: <span className="font-medium text-gray-800">{stock ?? '—'}</span></p>
+        <button
+          type="button"
+          onClick={() => onOpenReviews(product)}
+          className="rounded bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-700 hover:bg-neutral-200"
+        >
+          Voir / noter
+        </button>
+      </div>
+
+      <div className="mt-3 flex items-center justify-end">
         {product.unitaireOuKilo === 1 || product.unitaireOuKilo === true ? (
           <button
             onClick={async () => {
