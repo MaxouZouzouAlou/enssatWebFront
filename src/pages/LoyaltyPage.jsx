@@ -43,13 +43,22 @@ export default function LoyaltyPage() {
   }, []);
 
   const points = Number(loyalty?.pointsFidelite || 0);
+  const voucherOptions = Array.isArray(loyalty?.voucherOptions) && loyalty.voucherOptions.length
+    ? loyalty.voucherOptions
+    : [
+      { requiredPoints: 1000, rewardEuro: 5, remainingPoints: Math.max(1000 - points, 0), canRedeem: points >= 1000 },
+      { requiredPoints: 2000, rewardEuro: 10, remainingPoints: Math.max(2000 - points, 0), canRedeem: points >= 2000 },
+      { requiredPoints: 5000, rewardEuro: 25, remainingPoints: Math.max(5000 - points, 0), canRedeem: points >= 5000 },
+      { requiredPoints: 10000, rewardEuro: 50, remainingPoints: Math.max(10000 - points, 0), canRedeem: points >= 10000 }
+    ];
+  const nextVoucher = loyalty?.prochainPalier || voucherOptions.find((option) => !option.canRedeem) || voucherOptions[voucherOptions.length - 1];
+  const requiredPoints = Number(nextVoucher?.requiredPoints || 1000);
   const remaining = Number(loyalty?.prochainPalier?.remainingPoints || 0);
 
   const progressPct = useMemo(() => {
-    const required = Number(loyalty?.prochainPalier?.requiredPoints || 500);
-    if (required <= 0) return 0;
-    return Math.min((points / required) * 100, 100);
-  }, [loyalty, points]);
+    if (requiredPoints <= 0) return 0;
+    return Math.min((points / requiredPoints) * 100, 100);
+  }, [points, requiredPoints]);
 
   if (!sessionState.isPending && accountType && accountType !== 'particulier') {
     return <Navigate to="/compte" replace />;
@@ -65,9 +74,9 @@ export default function LoyaltyPage() {
     }
   };
 
-  const onRedeemVoucher = async () => {
+  const onRedeemVoucher = async (pointsToSpend) => {
     try {
-      const result = await redeemVoucher(500);
+      const result = await redeemVoucher(pointsToSpend);
       setMessage(`Bon cree: ${result.voucher.codeBon} (${euro(result.voucher.valeurEuros)}).`);
       await loadLoyalty();
     } catch (err) {
@@ -78,7 +87,7 @@ export default function LoyaltyPage() {
   return (
     <PageShell contentClassName="max-w-5xl">
       <SectionHeader eyebrow="Fidelite" title="Mes points et recompenses">
-        <p>Gagnez des points sur vos achats, relevez des defis simples et convertissez vos points en bons d'achat.</p>
+        <p>Suivez les points gagnés sur vos commandes et convertissez-les en bons d'achat utilisables au moment du paiement.</p>
       </SectionHeader>
 
       <SurfaceCard className="mt-8 p-5 sm:p-8">
@@ -119,16 +128,35 @@ export default function LoyaltyPage() {
                   Les points sont maintenant attribues automatiquement lors de la validation d'une commande reelle.
                 </p>
                 <p className="text-sm text-neutral-600">
-                  Regle actuelle: 1 point par euro reellement paye, arrondi a l'entier inferieur.
+                  Regle actuelle: 1 point tous les 2 EUR reellement payes apres reduction, arrondi a l'entier inferieur.
                 </p>
               </SoftPanel>
 
               <SoftPanel className="space-y-3">
                 <p className="text-sm font-semibold text-secondary-900">Convertir points en bon d'achat</p>
-                <p className="text-sm text-neutral-600">500 points = 5 EUR de reduction sur une commande.</p>
-                <ActionButton type="button" onClick={onRedeemVoucher} className="h-10" disabled={points < 500}>
-                  Convertir 500 points
-                </ActionButton>
+                <p className="text-sm text-neutral-600">
+                  Choisissez un palier fixe a appliquer ensuite directement pendant le checkout.
+                </p>
+                <div className="grid gap-3">
+                  {voucherOptions.map((option) => (
+                    <div key={option.requiredPoints} className="flex items-center justify-between rounded-2xl border border-neutral-200 px-4 py-3">
+                      <div>
+                        <p className="font-semibold text-secondary-900">{option.requiredPoints} points = {euro(option.rewardEuro)}</p>
+                        <p className="text-sm text-neutral-600">
+                          {option.canRedeem ? 'Disponible maintenant.' : `${option.remainingPoints} points manquants.`}
+                        </p>
+                      </div>
+                      <ActionButton
+                        type="button"
+                        onClick={() => onRedeemVoucher(option.requiredPoints)}
+                        className="h-10"
+                        disabled={!option.canRedeem}
+                      >
+                        Convertir
+                      </ActionButton>
+                    </div>
+                  ))}
+                </div>
               </SoftPanel>
             </div>
 

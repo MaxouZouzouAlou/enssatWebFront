@@ -7,15 +7,18 @@ import { loadCheckoutDraft, saveCheckoutDraft } from '../features/checkout/check
 import PageShell from '../components/layout/PageShell.jsx';
 import SectionHeader from '../components/layout/SectionHeader.jsx';
 import SurfaceCard from '../components/layout/SurfaceCard.jsx';
+import { fetchMyLoyalty } from '../services/loyalty-client.js';
 import { fetchCheckoutContext, previewCheckout } from '../services/orders-client.js';
 
 export default function CheckoutPaymentPage() {
 	const navigate = useNavigate();
-	const { cartItems } = useOutletContext();
+	const { accountType, cartItems } = useOutletContext();
 	const draft = useMemo(() => loadCheckoutDraft(), []);
 	const [context, setContext] = useState(null);
+	const [loyalty, setLoyalty] = useState(null);
 	const [preview, setPreview] = useState(draft.preview || null);
 	const [paymentMode, setPaymentMode] = useState(draft.modePaiement || 'carte_bancaire');
+	const [voucherId, setVoucherId] = useState(draft.voucherId || null);
 	const [error, setError] = useState('');
 
 	useEffect(() => {
@@ -29,10 +32,20 @@ export default function CheckoutPaymentPage() {
 				if (!ignore) setError(fetchError.message || 'Impossible de charger le paiement.');
 			});
 
+		if (accountType === 'particulier') {
+			fetchMyLoyalty()
+				.then((data) => {
+					if (!ignore) setLoyalty(data);
+				})
+				.catch(() => {
+					if (!ignore) setLoyalty(null);
+				});
+		}
+
 		return () => {
 			ignore = true;
 		};
-	}, []);
+	}, [accountType]);
 
 	useEffect(() => {
 		let ignore = false;
@@ -44,7 +57,9 @@ export default function CheckoutPaymentPage() {
 			modeLivraison: draft.modeLivraison,
 			modePaiement: paymentMode,
 			relayId: draft.relayId,
-			pickupAssignments: draft.pickupAssignments
+			adresseLivraison: draft.adresseLivraison,
+			pickupAssignments: draft.pickupAssignments,
+			voucherId
 		})
 			.then((data) => {
 				if (!ignore) {
@@ -59,7 +74,7 @@ export default function CheckoutPaymentPage() {
 		return () => {
 			ignore = true;
 		};
-	}, [draft.modeLivraison, draft.pickupAssignments, draft.relayId, paymentMode]);
+	}, [draft.adresseLivraison, draft.modeLivraison, draft.pickupAssignments, draft.relayId, paymentMode, voucherId]);
 
 	if (!cartItems.length) {
 		return <Navigate to="/panier" replace />;
@@ -73,10 +88,13 @@ export default function CheckoutPaymentPage() {
 		saveCheckoutDraft({
 			...draft,
 			modePaiement: paymentMode,
+			voucherId,
 			preview
 		});
 		navigate('/commande/verification');
 	};
+
+	const activeVouchers = (loyalty?.vouchers || []).filter((voucher) => voucher.statut === 'actif');
 
 	return (
 		<PageShell contentClassName="max-w-6xl">
@@ -119,6 +137,54 @@ export default function CheckoutPaymentPage() {
 								</label>
 							))}
 						</div>
+
+						{accountType === 'particulier' ? (
+							<div className="mt-6 rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
+								<p className="text-sm font-semibold text-secondary-900">Bon d'achat</p>
+								<p className="mt-1 text-sm text-secondary-600">
+									Appliquez un bon actif si vous voulez réduire le total de cette commande.
+								</p>
+								<div className="mt-4 grid gap-3">
+									<label className={`rounded-2xl border px-4 py-4 transition ${!voucherId ? 'border-primary-300 bg-white' : 'border-neutral-200 bg-white'}`}>
+										<div className="flex items-start gap-3">
+											<input
+												type="radio"
+												name="voucherId"
+												checked={!voucherId}
+												onChange={() => setVoucherId(null)}
+												className="mt-1 accent-primary-700"
+											/>
+											<div>
+												<p className="font-semibold text-secondary-900">Ne pas utiliser de bon</p>
+												<p className="mt-1 text-sm text-secondary-600">Vous conservez vos bons pour une prochaine commande.</p>
+											</div>
+										</div>
+									</label>
+									{activeVouchers.map((voucher) => (
+										<label key={voucher.idBon} className={`rounded-2xl border px-4 py-4 transition ${voucherId === voucher.idBon ? 'border-primary-300 bg-white' : 'border-neutral-200 bg-white'}`}>
+											<div className="flex items-start gap-3">
+												<input
+													type="radio"
+													name="voucherId"
+													checked={voucherId === voucher.idBon}
+													onChange={() => setVoucherId(voucher.idBon)}
+													className="mt-1 accent-primary-700"
+												/>
+												<div>
+													<p className="font-semibold text-secondary-900">{voucher.codeBon}</p>
+													<p className="mt-1 text-sm text-secondary-600">
+														{Number(voucher.valeurEuros || 0).toFixed(2)} € • expire le {voucher.dateExpiration ? new Date(voucher.dateExpiration).toLocaleDateString('fr-FR') : 'N/A'}
+													</p>
+												</div>
+											</div>
+										</label>
+									))}
+									{!activeVouchers.length ? (
+										<p className="text-sm text-secondary-600">Aucun bon actif disponible pour le moment.</p>
+									) : null}
+								</div>
+							</div>
+						) : null}
 
 						{error ? <p className="mt-5 text-sm font-semibold text-red-700">{error}</p> : null}
 
