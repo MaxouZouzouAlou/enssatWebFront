@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router';
 import Alert from '../components/Alert.jsx';
 import { ActionButton } from '../components/Button.jsx';
@@ -7,6 +7,7 @@ import PageShell from '../components/layout/PageShell.jsx';
 import SectionHeader from '../components/layout/SectionHeader.jsx';
 import SurfaceCard from '../components/layout/SurfaceCard.jsx';
 import { checkoutCurrentCart } from '../services/orders-client.js';
+import { fetchMyLoyalty } from '../services/loyalty-client.js';
 
 function estimateLineTotal(item) {
 	const quantity = Number(item.quantity || 0);
@@ -25,16 +26,71 @@ function PanierPage() {
 		clearCartError,
 		removeFromCart,
 		updateQuantity,
-		isAuthenticated
+		isAuthenticated,
+		accountType
 	} = useOutletContext();
 	const [checkoutError, setCheckoutError] = useState('');
 	const [checkoutSuccess, setCheckoutSuccess] = useState(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [modeLivraison, setModeLivraison] = useState('domicile');
+	const [voucherError, setVoucherError] = useState('');
+	const [voucherLoading, setVoucherLoading] = useState(false);
+	const [vouchers, setVouchers] = useState([]);
+	const [selectedVoucherId, setSelectedVoucherId] = useState('');
 	const total = useMemo(
 		() => cartItems.reduce((sum, item) => sum + estimateLineTotal(item), 0),
 		[cartItems]
 	);
+	const isParticulier = accountType === 'particulier';
+	const activeVouchers = useMemo(
+		() => vouchers.filter((voucher) => {
+			if (voucher.statut !== 'actif') return false;
+			if (!voucher.dateExpiration) return true;
+			return new Date(voucher.dateExpiration).getTime() > Date.now();
+		}),
+		[vouchers]
+	);
+	const selectedVoucher = useMemo(
+		() => activeVouchers.find((voucher) => Number(voucher.idBon) === Number(selectedVoucherId)) || null,
+		[activeVouchers, selectedVoucherId]
+	);
+	const totalAfterVoucher = useMemo(
+		() => Math.max(total - Number(selectedVoucher?.valeurEuros || 0), 0),
+		[total, selectedVoucher]
+	);
+
+	useEffect(() => {
+		let mounted = true;
+
+		if (!isAuthenticated || !isParticulier) {
+			setVouchers([]);
+			setVoucherError('');
+			setSelectedVoucherId('');
+			return () => {
+				mounted = false;
+			};
+		}
+
+		(async () => {
+			setVoucherLoading(true);
+			try {
+				const loyalty = await fetchMyLoyalty();
+				if (!mounted) return;
+				setVouchers(Array.isArray(loyalty?.vouchers) ? loyalty.vouchers : []);
+				setVoucherError('');
+			} catch (error) {
+				if (!mounted) return;
+				setVoucherError(error.message || 'Impossible de charger vos bons.');
+				setVouchers([]);
+			} finally {
+				if (mounted) setVoucherLoading(false);
+			}
+		})();
+
+		return () => {
+			mounted = false;
+		};
+	}, [isAuthenticated, isParticulier]);
 
 	const submitCheckout = async () => {
 		if (!isAuthenticated) {
@@ -47,10 +103,21 @@ function PanierPage() {
 		setCheckoutSuccess(null);
 
 		try {
-			const result = await checkoutCurrentCart({ modeLivraison });
+			const result = await checkoutCurrentCart({
+				modeLivraison,
+				voucherId: selectedVoucher ? Number(selectedVoucher.idBon) : undefined
+			});
 			await Promise.all(
 				cartItems.map((item) => updateQuantity(item.product.idProduit ?? item.product.id, 0))
 			);
+			if (selectedVoucher) {
+				setVouchers((current) => current.map((voucher) => (
+					Number(voucher.idBon) === Number(selectedVoucher.idBon)
+						? { ...voucher, statut: 'utilise' }
+						: voucher
+				)));
+				setSelectedVoucherId('');
+			}
 			setCheckoutSuccess(result.order);
 		} catch (error) {
 			setCheckoutError(error.message || 'Impossible de valider la commande.');
@@ -116,9 +183,18 @@ function PanierPage() {
 							<div className="text-lg font-semibold text-secondary-900">Total estimé</div>
 							<div className="text-lg font-bold text-primary-700">{total.toFixed(2)} €</div>
 						</div>
+						{selectedVoucher ? (
+							<div className="flex items-center justify-between rounded-2xl bg-secondary-50 px-4 py-3">
+								<div>
+									<p className="text-sm font-semibold text-secondary-900">Bon appliqué: {selectedVoucher.codeBon}</p>
+									<p className="text-sm text-neutral-600">Réduction de {Number(selectedVoucher.valeurEuros || 0).toFixed(2)} €.</p>
+								</div>
+								<div className="text-lg font-bold text-primary-700">{totalAfterVoucher.toFixed(2)} €</div>
+							</div>
+						) : null}
 
 						<div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-4">
-							<div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+							<div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
 								<label className="block text-sm font-semibold text-secondary-900" htmlFor="mode-livraison">
 									Mode de récupération
 									<select
@@ -132,6 +208,23 @@ function PanierPage() {
 										<option value="lieu_vente">Retrait sur place</option>
 									</select>
 								</label>
+								<label className="block text-sm font-semibold text-secondary-900" htmlFor="voucher-id">
+									Bon d'achat
+									<select
+										id="voucher-id"
+										value={selectedVoucherId}
+										onChange={(event) => setSelectedVoucherId(event.target.value)}
+										className="mt-2 h-11 w-full rounded-xl border border-neutral-300 bg-white px-4 text-sm text-secondary-900 outline-none transition focus:border-primary-300 focus:ring-2 focus:ring-primary-100"
+										disabled={!isAuthenticated || !isParticulier || voucherLoading || activeVouchers.length === 0}
+									>
+										<option value="">Aucun bon</option>
+										{activeVouchers.map((voucher) => (
+											<option key={voucher.idBon} value={voucher.idBon}>
+												{voucher.codeBon} - {Number(voucher.valeurEuros || 0).toFixed(2)} €
+											</option>
+										))}
+									</select>
+								</label>
 
 								<ActionButton
 									type="button"
@@ -142,6 +235,15 @@ function PanierPage() {
 									Valider la commande
 								</ActionButton>
 							</div>
+							{voucherLoading ? (
+								<p className="mt-3 text-sm text-neutral-600">Chargement des bons disponibles...</p>
+							) : null}
+							{voucherError ? (
+								<p className="mt-3 text-sm text-red-700">{voucherError}</p>
+							) : null}
+							{isAuthenticated && isParticulier && !voucherLoading && !voucherError && activeVouchers.length === 0 ? (
+								<p className="mt-3 text-sm text-neutral-600">Aucun bon actif disponible pour cette commande.</p>
+							) : null}
 							{!isAuthenticated ? (
 								<p className="mt-3 text-sm text-neutral-600">
 									Connectez-vous pour transformer ce panier en commande réelle.
