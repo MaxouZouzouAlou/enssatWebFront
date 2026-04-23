@@ -58,3 +58,20 @@ test('renders backend image paths as absolute API URLs', () => {
 	const image = screen.getByRole('img', { name: /tomates/i });
 	expect(image).toHaveAttribute('src', 'http://localhost:49161/images/produits/tomates.jpg');
 });
+
+test('renders the company name when provided by the products API', () => {
+	const product = {
+		idProduit: 11,
+		nom: 'Confiture',
+		prix: 4.8,
+		nature: 'Autre',
+		visible: true,
+		stock: 12,
+		idProfessionnel: 1,
+		entrepriseNom: 'Conserverie du Tregor',
+	};
+
+	render(<ProductCard product={product} />);
+
+	expect(screen.getByText('Conserverie du Tregor')).toBeInTheDocument();
+});

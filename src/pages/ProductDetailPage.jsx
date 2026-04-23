@@ -38,6 +38,25 @@ function resolveProductImageUrl(imageValue) {
 	return `${base}${normalizedPath}`;
 }
 
+function getCompanyName(product) {
+	const candidates = [
+		product?.entrepriseNom,
+		product?.nomEntreprise,
+		product?.raisonSociale,
+		product?.entreprise?.nom,
+		product?.entreprise?.nomEntreprise,
+		product?.professionnel?.entrepriseNom,
+		product?.professionnel?.nomEntreprise,
+		product?.professionnel?.nom,
+		typeof product?.professionnel === 'string' ? product.professionnel : null,
+		typeof product?.producteur === 'string' ? product.producteur : null,
+		product?.sellerName,
+	];
+
+	const found = candidates.find((value) => typeof value === 'string' && value.trim().length > 0);
+	return found?.trim() || 'Producteur local';
+}
+
 function ProductDetailPage() {
 	const { addToCart, isAuthenticated, accountType, profile } = useOutletContext();
 	const navigate = useNavigate();
@@ -163,7 +182,7 @@ function ProductDetailPage() {
 	const image = imageUrl;
 	const stockLabel = formatProductStock(product, product.stock ?? null);
 	const bio = product.bio === 1 || product.bio === '1' || product.bio === true;
-	const producer = product.producteur ?? product.professionnel ?? product.entrepriseNom ?? product.sellerName ?? 'Producteur local';
+	const producer = getCompanyName(product);
 	const noteMoyenneProduit = Number(product.noteMoyenneProduit ?? 0);
 	const nombreAvisProduit = Number(product.nombreAvisProduit ?? 0);
 	const noteMoyenneProducteur = Number(product.noteMoyenneProducteur ?? 0);

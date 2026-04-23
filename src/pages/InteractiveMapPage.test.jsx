@@ -1,6 +1,8 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import InteractiveMapPage from './InteractiveMapPage.jsx';
 import { fetchMapLocations, fetchOffersByLocation } from '../services/map-client.js';
+
+const mockSetView = jest.fn();
 
 jest.mock('../services/map-client.js', () => ({
   fetchMapLocations: jest.fn(),
@@ -25,7 +27,7 @@ jest.mock('react-leaflet', () => ({
   Popup: ({ children }) => <div>{children}</div>,
   TileLayer: () => null,
   useMap: () => ({
-    setView: jest.fn(),
+    setView: mockSetView,
   }),
 }));
 
@@ -34,7 +36,7 @@ describe('InteractiveMapPage', () => {
     jest.clearAllMocks();
   });
 
-  test('uses marker horaires from the listed location and filters invalid coordinates', async () => {
+  test('starts with the sales points list and opens offers only after selecting a location', async () => {
     fetchMapLocations.mockResolvedValue([
       {
         idLieu: 1,
@@ -53,7 +55,7 @@ describe('InteractiveMapPage', () => {
       },
       {
         idLieu: 2,
-        typeLieu: 'Depot',
+        typeLieu: 'Ferme',
         horaires: 'Jeudi 16h-19h',
         adresse: {
           ligne: '2 rue B',
@@ -79,21 +81,44 @@ describe('InteractiveMapPage', () => {
           ville: 'Rennes',
         },
       },
-      offres: [],
+      offres: [
+        {
+          idProduit: 7,
+          idProfessionnel: 2,
+          nom: 'Pommes',
+          prix: 2.5,
+          unitaireOuKilo: false,
+          nature: 'Fruit',
+          bio: true,
+          stock: 15,
+          producteur: { prenom: 'Anna', nom: 'Le Goff' },
+          entreprise: { nom: 'Les Vergers' },
+        },
+      ],
     });
 
     render(<InteractiveMapPage />);
 
     await waitFor(() => expect(fetchMapLocations).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(fetchOffersByLocation).toHaveBeenCalledWith(1));
+    expect(fetchOffersByLocation).not.toHaveBeenCalled();
 
-    expect(screen.getByText(/Horaires:\s*Mardi 8h-12h/)).toBeInTheDocument();
+    expect(screen.getByText('Liste des points de vente')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /ouvrir marche/i })).toBeInTheDocument();
+    expect(screen.getByText('1 lieu(x)')).toBeInTheDocument();
+    expect(screen.getAllByText(/Horaires:\s*Mardi 8h-12h/)).toHaveLength(2);
     expect(screen.queryByText(/Horaires:\s*Jeudi 16h-19h/)).not.toBeInTheDocument();
     expect(screen.getAllByTestId('map-marker')).toHaveLength(1);
-    expect(screen.getByText('1 lieu(x)')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /ouvrir marche/i }));
+
+    await waitFor(() => expect(fetchOffersByLocation).toHaveBeenCalledWith(1));
+    expect(screen.getByText('Offres du lieu selectionne')).toBeInTheDocument();
+    expect(await screen.findByText('Pommes')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /retour a la liste/i })).toBeInTheDocument();
+    expect(mockSetView).toHaveBeenLastCalledWith([48.12, -1.68], 14);
   });
 
-  test('shows a contextual message when offers fail to load for the selected location', async () => {
+  test('opens a location from the map and allows returning to the list', async () => {
     fetchMapLocations.mockResolvedValue([
       {
         idLieu: 4,
@@ -116,9 +141,20 @@ describe('InteractiveMapPage', () => {
 
     render(<InteractiveMapPage />);
 
-    await waitFor(() => expect(fetchOffersByLocation).toHaveBeenCalledWith(4));
+    await waitFor(() => expect(fetchMapLocations).toHaveBeenCalledTimes(1));
+    await screen.findByTestId('map-marker');
 
-    expect(screen.getByText('Impossible de charger les offres de ce lieu.')).toBeInTheDocument();
-    expect(screen.getByText('Impossible de charger les offres pour Magasin.')).toBeInTheDocument();
+    fireEvent.click(await screen.findByTestId('map-marker'));
+
+    await waitFor(() => expect(fetchOffersByLocation).toHaveBeenCalledWith(4));
+    expect(await screen.findByText('Impossible de charger les offres de ce lieu.')).toBeInTheDocument();
+    expect(await screen.findByText('Impossible de charger les offres pour Magasin.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /retour a la liste/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /retour a la liste/i }));
+
+    expect(screen.getByText('Liste des points de vente')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /ouvrir magasin/i })).toBeInTheDocument();
+    expect(mockSetView).toHaveBeenLastCalledWith([48.65, -2.02], 11);
   });
 });
