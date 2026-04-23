@@ -197,29 +197,6 @@ useEffect(() => {
 		{ key: 'revenue', header: 'CA genere', render: (row) => euro.format(row.revenue) },
 	];
 
-
-	const downloadSalesReport = async () => {
-		if (!professionalId) return;
-		setDocumentMessage('');
-		try {
-			await downloadProfessionalSalesReport(professionalId, 90);
-			setDocumentMessage('Rapport des ventes telecharge.');
-		} catch (err) {
-			setDocumentMessage(err.message || 'Impossible de telecharger le rapport.');
-		}
-	};
-
-	const downloadInvoice = async (idCommande) => {
-		if (!professionalId) return;
-		setDocumentMessage('');
-		try {
-			await downloadOrderInvoice(professionalId, idCommande);
-			setDocumentMessage(`Facture PDF commande #${idCommande} telechargee.`);
-		} catch (err) {
-			setDocumentMessage(err.message || 'Impossible de telecharger cette facture.');
-		}
-	};
-
 	return (
 		<PageShell contentClassName="grid grid-cols-12 gap-5">
 			<header className="col-span-12 flex flex-col justify-between gap-4 md:flex-row md:items-start">
@@ -248,6 +225,7 @@ useEffect(() => {
 					Telecharger rapport ventes (CSV)
 				</ActionButton>
 			</div>
+		</header>
 
 			<section className="col-span-12 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
 				{metricCards.map(([label, value, trend, trendClassName]) => (
@@ -480,6 +458,9 @@ useEffect(() => {
 									</div>
 								</form>
 							</div>
+							</div>
+							)}
+							</SurfaceCard>
 				<SurfaceCard className="col-span-12 p-4">
 					<div className="mb-3 flex items-end justify-between gap-3">
 						<h2 className="text-2xl font-bold">Documents de commande</h2>

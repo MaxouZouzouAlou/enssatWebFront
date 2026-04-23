@@ -12,6 +12,8 @@ jest.mock('../services/auth-client', () => ({
   fetchAuthProfile: jest.fn()
 }));
 
+jest.mock('../pages/InteractiveMapPage.jsx', () => () => null);
+
 
 test('redirects logout from protected pages to home', () => {
   expect(getLogoutRedirectPath('/compte')).toBe('/');

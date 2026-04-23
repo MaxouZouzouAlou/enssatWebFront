@@ -17,9 +17,11 @@ import ProductsPage from '../pages/ProductsPage.jsx';
 import RegisterPage from '../pages/RegisterPage.jsx';
 import ResetPasswordPage from '../pages/ResetPasswordPage.jsx';
 import SettingsPage from '../pages/SettingsPage.jsx';
+import InteractiveMapPage from '../pages/InteractiveMapPage.jsx';
 import { authClient } from '../services/auth-client';
 
 const protectedPaths = new Set(['/compte', '/fidelite', '/dashboard-producteur', '/espace-pro', '/tickets-incidents']);
+
 
 export function getLogoutRedirectPath(pathname) {
 	return protectedPaths.has(pathname) ? '/' : null;
@@ -187,6 +189,7 @@ export default function AppRoutes() {
 				/>
 				<Route path="/tickets-incidents" element={requireAuth(<IncidentTicketsPage />)} />
 				<Route path="/fidelite" element={requireAuth(<LoyaltyPage />)} />
+				<Route path="/carte-interactive" element={<InteractiveMapPage />} />
 				<Route element={
 					<MarketplaceLayout
 						addToCart={addToCart}
