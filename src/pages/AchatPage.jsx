@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useOutletContext } from 'react-router';
+import { useNavigate, useOutletContext } from 'react-router';
 import ProductGrid from '../components/ProductGrid';
 import { ActionButton } from '../components/Button.jsx';
 import PageShell from '../components/layout/PageShell.jsx';
@@ -16,6 +16,7 @@ import {
 
 function AchatPage() {
 	const { addToCart, accountType, isAuthenticated } = useOutletContext();
+	const navigate = useNavigate();
 	const [products, setProducts] = useState([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
@@ -46,6 +47,12 @@ function AchatPage() {
 		} finally {
 			setReviewsLoading(false);
 		}
+	};
+
+	const openProduct = (product) => {
+		const idProduit = product.idProduit ?? product.id ?? product._id;
+		if (idProduit == null) return;
+		navigate(`/produits/${idProduit}`);
 	};
 
 	const submitProductReview = async (event) => {
@@ -131,7 +138,7 @@ function AchatPage() {
 				<p>Produits frais, de saison et proposés par les producteurs référencés.</p>
 			</SectionHeader>
 			<div className="mt-10 grid gap-6 xl:grid-cols-[2fr_1fr]">
-				<ProductGrid products={products} addToCart={addToCart} onOpenReviews={loadReviews} />
+				<ProductGrid products={products} addToCart={addToCart} onOpenReviews={loadReviews} onOpenProduct={openProduct} />
 
 				<SurfaceCard className="h-fit p-4">
 					<h2 className="text-lg font-semibold text-secondary-900">Avis et notes</h2>

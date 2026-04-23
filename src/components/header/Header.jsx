@@ -190,9 +190,9 @@ function Header({
               renderActionContent(activePopover, true)
             ) : (
               <div className="flex flex-col items-center gap-3 border-t border-neutral-200 pt-3">
-                <NavTabs className="justify-center" isProfessional={isProfessional} onNavigate={close} />
+                <NavTabs className="justify-center" isProfessional={isProfessional} onNavigate={() => setActivePopover(null)} />
                 {!isAuthenticated ? (
-                  <PrimaryButton onClick={() => { navigate('/login'); close(); }} className="w-full">
+                  <PrimaryButton onClick={() => { navigate('/login'); setActivePopover(null); }} className="w-full">
                     Se connecter
                   </PrimaryButton>
                 ) : null}

@@ -1,7 +1,14 @@
 import { API_BASE_URL } from './auth-client';
 
-export async function fetchProfessionalDashboard(idProfessionnel) {
-	const response = await fetch(`${API_BASE_URL}/professionnels/${idProfessionnel}/dashboard`, {
+function withCompanyScope(url, idEntreprise) {
+	if (idEntreprise == null) return url;
+	const scopedUrl = new URL(url, window.location.origin);
+	scopedUrl.searchParams.set('idEntreprise', String(idEntreprise));
+	return scopedUrl.toString();
+}
+
+export async function fetchProfessionalDashboard(idProfessionnel, idEntreprise = null) {
+	const response = await fetch(withCompanyScope(`${API_BASE_URL}/professionnels/${idProfessionnel}/dashboard`, idEntreprise), {
 		credentials: 'include'
 	});
 
@@ -43,8 +50,13 @@ function extractFileNameFromDisposition(contentDisposition, fallbackName) {
 	return fallbackName;
 }
 
-export async function downloadProfessionalSalesReport(idProfessionnel, days = 90) {
-	const response = await fetch(`${API_BASE_URL}/professionnels/${idProfessionnel}/documents/ventes.csv?days=${days}`, {
+export async function downloadProfessionalSalesReport(idProfessionnel, days = 90, idEntreprise = null) {
+	const scopedUrl = new URL(`${API_BASE_URL}/professionnels/${idProfessionnel}/documents/ventes.csv`, window.location.origin);
+	scopedUrl.searchParams.set('days', String(days));
+	if (idEntreprise != null) {
+		scopedUrl.searchParams.set('idEntreprise', String(idEntreprise));
+	}
+	const response = await fetch(scopedUrl.toString(), {
 		credentials: 'include'
 	});
 
@@ -59,10 +71,13 @@ export async function downloadProfessionalSalesReport(idProfessionnel, days = 90
 	triggerDownload(blob, fileName);
 }
 
-export async function downloadOrderInvoice(idProfessionnel, idCommande) {
-	const response = await fetch(`${API_BASE_URL}/professionnels/${idProfessionnel}/documents/commande/${idCommande}/facture.pdf`, {
+export async function downloadOrderInvoice(idProfessionnel, idCommande, idEntreprise = null) {
+	const response = await fetch(
+		withCompanyScope(`${API_BASE_URL}/professionnels/${idProfessionnel}/documents/commande/${idCommande}/facture.pdf`, idEntreprise),
+		{
 		credentials: 'include'
-	});
+		}
+	);
 
 	if (!response.ok) {
 		const data = await response.json().catch(() => ({}));

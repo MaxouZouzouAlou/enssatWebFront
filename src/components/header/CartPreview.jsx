@@ -25,12 +25,12 @@ export default function CartPreview({ items = [], onClose, removeItem = () => {}
 				<ActionButton
 					type="button"
 					onClick={() => {
-						navigate('/produits');
+						navigate('/panier');
 						onClose?.();
 					}}
 					className="w-full"
 				>
-					Voir les produits
+					Voir mon panier
 				</ActionButton>
 			</div>
 		);

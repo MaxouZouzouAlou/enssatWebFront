@@ -1,7 +1,14 @@
 import { API_BASE_URL } from './auth-client.js';
 
-export async function getProductsForProfessional(idProfessionnel) {
-    const res = await fetch(`${API_BASE_URL}/products/professionnel/${idProfessionnel}`, {
+function withCompanyScope(url, idEntreprise) {
+    if (idEntreprise == null) return url;
+    const scopedUrl = new URL(url, window.location.origin);
+    scopedUrl.searchParams.set('idEntreprise', String(idEntreprise));
+    return scopedUrl.toString();
+}
+
+export async function getProductsForProfessional(idProfessionnel, idEntreprise = null) {
+    const res = await fetch(withCompanyScope(`${API_BASE_URL}/products/professionnel/${idProfessionnel}`, idEntreprise), {
         method: 'GET',
         credentials: 'include',
     });
@@ -19,8 +26,9 @@ export async function getProductsForProfessional(idProfessionnel) {
     }
 }
 
-export async function createProductForProfessional(idProfessionnel, product) {
-    const url = `${API_BASE_URL}/products/professionnel/${idProfessionnel}`;
+export async function createProductForProfessional(idProfessionnel, product, idEntreprise = null) {
+    const scopedCompanyId = idEntreprise ?? product?.idEntreprise ?? null;
+    const url = withCompanyScope(`${API_BASE_URL}/products/professionnel/${idProfessionnel}`, scopedCompanyId);
 
     let res;
     // If an image File/Blob exists, send multipart/form-data
@@ -34,6 +42,7 @@ export async function createProductForProfessional(idProfessionnel, product) {
         if (product.bio != null) fd.append('bio', String(product.bio));
         if (product.tva != null) fd.append('tva', String(product.tva));
         if (product.reductionPro != null) fd.append('reductionPro', String(product.reductionPro));
+        if (scopedCompanyId != null) fd.append('idEntreprise', String(scopedCompanyId));
         fd.append('image', product.image);
 
         res = await fetch(url, {
@@ -46,7 +55,10 @@ export async function createProductForProfessional(idProfessionnel, product) {
             method: 'POST',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(product),
+            body: JSON.stringify({
+                ...product,
+                ...(scopedCompanyId != null ? { idEntreprise: scopedCompanyId } : {}),
+            }),
         });
     }
 
@@ -61,8 +73,9 @@ export async function createProductForProfessional(idProfessionnel, product) {
     try { return JSON.parse(text); } catch { return null; }
 }
 
-export async function updateProductForProfessional(idProfessionnel, idProduit, product) {
-    const url = `${API_BASE_URL}/products/professionnel/${idProfessionnel}/${idProduit}`;
+export async function updateProductForProfessional(idProfessionnel, idProduit, product, idEntreprise = null) {
+    const scopedCompanyId = idEntreprise ?? product?.idEntreprise ?? null;
+    const url = withCompanyScope(`${API_BASE_URL}/products/professionnel/${idProfessionnel}/${idProduit}`, scopedCompanyId);
 
     let res;
     if (product && product.image && (product.image instanceof File || (typeof Blob !== 'undefined' && product.image instanceof Blob))) {
@@ -76,6 +89,7 @@ export async function updateProductForProfessional(idProfessionnel, idProduit, p
         if (product.tva != null) fd.append('tva', String(product.tva));
         if (product.reductionPro != null) fd.append('reductionPro', String(product.reductionPro));
         if (product.visible != null) fd.append('visible', product.visible ? '1' : '0');
+        if (scopedCompanyId != null) fd.append('idEntreprise', String(scopedCompanyId));
         fd.append('image', product.image);
 
         res = await fetch(url, {
@@ -87,6 +101,7 @@ export async function updateProductForProfessional(idProfessionnel, idProduit, p
         // ensure visible is a primitive (boolean/number) when sending JSON
         const payload = { ...product };
         if (payload.visible != null) payload.visible = payload.visible ? 1 : 0;
+        if (scopedCompanyId != null) payload.idEntreprise = scopedCompanyId;
         res = await fetch(url, {
             method: 'PUT',
             credentials: 'include',
@@ -106,8 +121,8 @@ export async function updateProductForProfessional(idProfessionnel, idProduit, p
     try { return JSON.parse(text); } catch { return null; }
 }
 
-export async function deleteProductForProfessional(idProfessionnel, idProduit) {
-    const url = `${API_BASE_URL}/products/professionnel/${idProfessionnel}/${idProduit}`;
+export async function deleteProductForProfessional(idProfessionnel, idProduit, idEntreprise = null) {
+    const url = withCompanyScope(`${API_BASE_URL}/products/professionnel/${idProfessionnel}/${idProduit}`, idEntreprise);
     const res = await fetch(url, {
         method: 'DELETE',
         credentials: 'include'

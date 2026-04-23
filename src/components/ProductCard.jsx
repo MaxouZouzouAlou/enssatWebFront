@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActionButton } from './Button.jsx';
 import {
   displayValueToCartQuantity,
@@ -7,6 +7,8 @@ import {
   isUnitProduct,
   normalizeWeightInput,
 } from '../utils/cartQuantity.js';
+
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:49161';
 
 const categoryStyles = {
   Fruit: 'bg-pink-100 text-pink-900',
@@ -32,6 +34,35 @@ const categoryNameColors = {
 
 function getProductImage(product) {
   return product.imagePath ?? product.image ?? product.path ?? product.imageUrl ?? null;
+}
+
+function getCompanyName(product) {
+  const candidates = [
+    product.entrepriseNom,
+    product.nomEntreprise,
+    product.raisonSociale,
+    product.entreprise?.nom,
+    product.entreprise?.nomEntreprise,
+    product.professionnel?.entrepriseNom,
+    product.professionnel?.nomEntreprise,
+    product.professionnel?.nom,
+    typeof product.professionnel === 'string' ? product.professionnel : null,
+    typeof product.producteur === 'string' ? product.producteur : null,
+    product.sellerName,
+  ];
+
+  const found = candidates.find((value) => typeof value === 'string' && value.trim().length > 0);
+  return found?.trim() || 'Entreprise non renseignee';
+}
+
+function resolveProductImageUrl(imageValue) {
+  if (!imageValue || typeof imageValue !== 'string') return null;
+  const trimmed = imageValue.trim();
+  if (!trimmed) return null;
+  if (/^https?:\/\//i.test(trimmed) || trimmed.startsWith('data:')) return trimmed;
+  const base = API_BASE_URL.replace(/\/$/, '');
+  const normalizedPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  return `${base}${normalizedPath}`;
 }
 
 function QuantityStepper({ label, min, step, suffix, value, onBlur, onChange }) {
@@ -71,12 +102,12 @@ function QuantityStepper({ label, min, step, suffix, value, onBlur, onChange }) 
   );
 }
 
-export default function ProductCard({ product, onAdd = () => {}, onOpenReviews = () => {} }) {
+export default function ProductCard({ product, onAdd = () => {}, onOpenReviews = () => {}, onOpenProduct = null }) {
   const name = product.nom ?? product.name ?? product.title ?? 'Sans nom';
   const priceRaw = product.prix ?? product.price;
   const price = priceRaw != null && priceRaw !== '' ? Number(priceRaw).toFixed(2) : null;
   const category = product.nature ?? 'Autre';
-  const producer = product.producteur ?? product.professionnel ?? product.entrepriseNom ?? product.sellerName ?? 'Producteur local';
+  const producer = getCompanyName(product);
   const stock = product.stock ?? null;
   const bio = product.bio === 1 || product.bio === '1' || product.bio === true;
   const visible = product.visible === 1 || product.visible === '1' || product.visible === true;
@@ -88,9 +119,15 @@ export default function ProductCard({ product, onAdd = () => {}, onOpenReviews =
   const config = getQuantityInputConfig(product);
   const [quantityInput, setQuantityInput] = useState(unitProduct ? '1' : '100');
   const [quantityUnit, setQuantityUnit] = useState(config.suffix);
+  const [imageError, setImageError] = useState(false);
   const cartQuantity = displayValueToCartQuantity(product, quantityInput, quantityUnit);
-  const image = getProductImage(product);
+  const image = resolveProductImageUrl(getProductImage(product));
   const stockLabel = formatProductStock(product, stock);
+  const canOpenProduct = typeof onOpenProduct === 'function';
+
+  useEffect(() => {
+    setImageError(false);
+  }, [image]);
 
   const normalizeWeight = () => {
     if (unitProduct) return;
@@ -99,8 +136,28 @@ export default function ProductCard({ product, onAdd = () => {}, onOpenReviews =
     setQuantityUnit(normalized.unit);
   };
 
+  const handleOpenProduct = () => {
+    onOpenProduct(product);
+  };
+
   return (
-    <article className="overflow-hidden rounded-xl bg-[#fbf7ee] shadow-[0_14px_35px_rgba(29,52,34,.09)]">
+    <article
+      className="overflow-hidden rounded-xl bg-[#fbf7ee] shadow-[0_14px_35px_rgba(29,52,34,.09)] transition hover:-translate-y-0.5 hover:shadow-[0_18px_45px_rgba(29,52,34,.14)]"
+      role={canOpenProduct ? 'button' : undefined}
+      tabIndex={canOpenProduct ? 0 : undefined}
+      aria-label={canOpenProduct ? `Voir le produit ${name}` : undefined}
+      onClick={canOpenProduct ? handleOpenProduct : undefined}
+      onKeyDown={
+        canOpenProduct
+          ? (event) => {
+						if (event.key === 'Enter' || event.key === ' ') {
+							event.preventDefault();
+							handleOpenProduct();
+						}
+					}
+          : undefined
+      }
+    >
       <div className="relative aspect-[5/3] bg-gradient-to-br from-primary-100 via-neutral-100 to-secondary-100">
         <span className={`absolute left-3 top-3 rounded-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] ${categoryStyles[category] || categoryStyles.Autre}`}>
           {category}
@@ -119,12 +176,16 @@ export default function ProductCard({ product, onAdd = () => {}, onOpenReviews =
             </span>
           </span>
         )}
-        {image ? (
+        {image && !imageError ? (
           <img
             src={image}
             alt={name}
             className="h-full w-full object-cover"
             loading="lazy"
+            onError={(event) => {
+              event.currentTarget.onerror = null;
+              setImageError(true);
+            }}
           />
         ) : (
           <div className="flex h-full items-center justify-center text-primary-700/60">
@@ -184,7 +245,10 @@ export default function ProductCard({ product, onAdd = () => {}, onOpenReviews =
               variant="secondary"
               className="h-10 w-10 rounded-full p-0"
               aria-label="Voir et noter"
-              onClick={() => onOpenReviews(product)}
+              onClick={(event) => {
+					event.stopPropagation();
+					onOpenReviews(product);
+				}}
             >
               <span className="material-symbols-rounded text-xl">reviews</span>
             </ActionButton>
@@ -192,7 +256,8 @@ export default function ProductCard({ product, onAdd = () => {}, onOpenReviews =
               variant="primary"
               className="h-10 w-10 rounded-full p-0 shadow-lg"
               aria-label="Ajouter au panier"
-              onClick={async () => {
+              onClick={async (event) => {
+					event.stopPropagation();
                 try { await onAdd(product, cartQuantity); } catch (err) { console.error(err); }
               }}
             >

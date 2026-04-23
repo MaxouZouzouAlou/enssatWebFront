@@ -41,6 +41,23 @@ export async function fetchAuthProfile() {
 	return data;
 }
 
+export async function updatePersonalAddress(payload) {
+	const response = await fetch(`${API_BASE_URL}/api/auth/profile/address`, {
+		method: 'PUT',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		credentials: 'include',
+		body: JSON.stringify(payload)
+	});
+
+	const data = await response.json().catch(() => ({}));
+	if (!response.ok) {
+		throw new Error(data.error || 'Impossible de mettre a jour votre adresse.');
+	}
+	return data;
+}
+
 export async function requestPasswordReset(email) {
 	const redirectTo = `${window.location.origin}/reset-password`;
 	const response = await fetch(`${API_BASE_URL}/api/auth/request-password-reset`, {

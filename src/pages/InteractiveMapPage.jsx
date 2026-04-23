@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import L from 'leaflet';
-import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
+import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
@@ -27,6 +27,35 @@ function unitLabel(offer) {
   return offer.unitaireOuKilo ? 'unite' : 'kilo';
 }
 
+function getLocationCoordinates(location) {
+  const rawLatitude = location?.coordinates?.latitude;
+  const rawLongitude = location?.coordinates?.longitude;
+
+  if (rawLatitude == null || rawLongitude == null || rawLatitude === '' || rawLongitude === '') {
+    return null;
+  }
+
+  const latitude = Number(rawLatitude);
+  const longitude = Number(rawLongitude);
+
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return null;
+  }
+
+  return [latitude, longitude];
+}
+
+function MapViewportController({ center }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!Array.isArray(center) || center.length !== 2) return;
+    map.setView(center);
+  }, [center, map]);
+
+  return null;
+}
+
 export default function InteractiveMapPage() {
   const [locations, setLocations] = useState([]);
   const [selectedLieuId, setSelectedLieuId] = useState(null);
@@ -40,13 +69,21 @@ export default function InteractiveMapPage() {
       setLoadingLocations(true);
       try {
         const data = await fetchMapLocations();
-        setLocations(Array.isArray(data) ? data : []);
-        if (Array.isArray(data) && data.length > 0) {
-          setSelectedLieuId(data[0].idLieu);
+        const validLocations = Array.isArray(data)
+          ? data.filter((location) => getLocationCoordinates(location))
+          : [];
+
+        setLocations(validLocations);
+        if (validLocations.length > 0) {
+          setSelectedLieuId(validLocations[0].idLieu);
+        } else {
+          setSelectedLieuId(null);
         }
         setError('');
       } catch (err) {
         setError(err.message || 'Erreur de chargement de la carte.');
+        setLocations([]);
+        setSelectedLieuId(null);
       } finally {
         setLoadingLocations(false);
       }
@@ -67,6 +104,7 @@ export default function InteractiveMapPage() {
         setSelectedData(data);
         setError('');
       } catch (err) {
+        setSelectedData(null);
         setError(err.message || 'Erreur de chargement des offres.');
       } finally {
         setLoadingOffers(false);
@@ -94,6 +132,10 @@ export default function InteractiveMapPage() {
   }, [selectedData]);
 
   const selectedLieu = selectedData?.lieu;
+  const selectedLocation = useMemo(
+    () => locations.find((location) => String(location.idLieu) === String(selectedLieuId)) || null,
+    [locations, selectedLieuId]
+  );
 
   return (
     <main className="mx-auto w-[min(1240px,calc(100%-2rem))] py-8">
@@ -120,27 +162,33 @@ export default function InteractiveMapPage() {
 
           <div className="h-[520px] w-full">
             <MapContainer center={center} zoom={11} scrollWheelZoom className="h-full w-full">
+              <MapViewportController center={center} />
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
 
-              {locations.map((location) => (
-                <Marker
-                  key={location.idLieu}
-                  position={[Number(location.coordinates?.latitude), Number(location.coordinates?.longitude)]}
-                  eventHandlers={{
-                    click: () => setSelectedLieuId(location.idLieu),
-                  }}
-                >
-                  <Popup>
-                    <p className="font-semibold">{location.typeLieu || 'Lieu de vente'}</p>
-                    <p className="text-sm">{formatAddress(location)}</p>
-                    <p className="text-sm">Horaires: {selectedLieu?.horaires}</p>
-                    <p className="text-sm">{Number(location.offresCount || 0)} offre(s)</p>
-                  </Popup>
-                </Marker>
-              ))}
+              {locations.map((location) => {
+                const coordinates = getLocationCoordinates(location);
+                if (!coordinates) return null;
+
+                return (
+                  <Marker
+                    key={location.idLieu}
+                    position={coordinates}
+                    eventHandlers={{
+                      click: () => setSelectedLieuId(location.idLieu),
+                    }}
+                  >
+                    <Popup>
+                      <p className="font-semibold">{location.typeLieu || 'Lieu de vente'}</p>
+                      <p className="text-sm">{formatAddress(location)}</p>
+                      {location.horaires && <p className="text-sm">Horaires: {location.horaires}</p>}
+                      <p className="text-sm">{Number(location.offresCount || 0)} offre(s)</p>
+                    </Popup>
+                  </Marker>
+                );
+              })}
             </MapContainer>
           </div>
         </article>
@@ -149,6 +197,10 @@ export default function InteractiveMapPage() {
           <h2 className="text-lg font-semibold text-secondary-900">Offres du lieu selectionne</h2>
 
           {loadingLocations && <p className="mt-3 text-sm text-secondary-600">Chargement des lieux...</p>}
+
+          {!loadingLocations && !locations.length && !error && (
+            <p className="mt-3 text-sm text-secondary-600">Aucun lieu de vente exploitable pour le moment.</p>
+          )}
 
           {selectedLieu && (
             <div className="mt-3 rounded-xl border border-neutral-200 bg-white p-3">
@@ -159,6 +211,12 @@ export default function InteractiveMapPage() {
           )}
 
           {loadingOffers && <p className="mt-4 text-sm text-secondary-600">Chargement des offres...</p>}
+
+          {!loadingOffers && !selectedLieu && selectedLocation && error && (
+            <p className="mt-4 text-sm text-secondary-600">
+              Impossible de charger les offres pour {selectedLocation.typeLieu || 'ce lieu'}.
+            </p>
+          )}
 
           {!loadingOffers && selectedLieu && offers.length === 0 && (
             <p className="mt-4 text-sm text-secondary-600">Aucune offre visible pour ce lieu pour le moment.</p>

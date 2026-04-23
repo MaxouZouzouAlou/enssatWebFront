@@ -6,21 +6,26 @@ import SiteFooter from '../components/SiteFooter.jsx';
 import useAuthProfile from '../features/auth/useAuthProfile';
 import useCart from '../hooks/useCart';
 import AccountPage from '../pages/AccountPage.jsx';
-import AchatPage from '../pages/AchatPage.jsx';
+import CheckoutDeliveryPage from '../pages/CheckoutDeliveryPage.jsx';
+import CheckoutPaymentPage from '../pages/CheckoutPaymentPage.jsx';
+import CheckoutReviewPage from '../pages/CheckoutReviewPage.jsx';
 import IncidentTicketsPage from '../pages/IncidentTicketsPage.jsx';
 import HomePage from '../pages/HomePage.jsx';
 import LoginPage from '../pages/LoginPage.jsx';
 import LoyaltyPage from '../pages/LoyaltyPage.jsx';
+import OrderDetailPage from '../pages/OrderDetailPage.jsx';
+import OrderHistoryPage from '../pages/OrderHistoryPage.jsx';
 import PanierPage from '../pages/PanierPage.jsx';
 import ProfessionalDashboardPage from '../pages/ProfessionalDashboardPage.jsx';
 import ProductsPage from '../pages/ProductsPage.jsx';
+import ProductDetailPage from '../pages/ProductDetailPage.jsx';
 import RegisterPage from '../pages/RegisterPage.jsx';
 import ResetPasswordPage from '../pages/ResetPasswordPage.jsx';
 import SettingsPage from '../pages/SettingsPage.jsx';
 import InteractiveMapPage from '../pages/InteractiveMapPage.jsx';
 import { authClient } from '../services/auth-client';
 
-const protectedPaths = new Set(['/compte', '/fidelite', '/dashboard-producteur', '/espace-pro', '/tickets-incidents']);
+const protectedPaths = new Set(['/compte', '/commandes', '/fidelite', '/dashboard-producteur', '/espace-pro', '/tickets-incidents', '/commande/livraison', '/commande/paiement', '/commande/verification']);
 
 
 export function getLogoutRedirectPath(pathname) {
@@ -59,6 +64,10 @@ export default function AppRoutes() {
 	const { clearProfile, profileState, refreshSession, sessionState } = useAuthProfile();
 	const profile = profileState.data?.profile;
 	const { cartError, cartItems, cartCount, addToCart, clearCartError, removeFromCart, updateQuantity } = useCart(profile);
+
+	useEffect(() => {
+		window.scrollTo(0, 0);
+	}, [location.pathname]);
 
 	const refreshSessionAndOpenAccount = async () => {
 		await refreshSession();
@@ -188,6 +197,8 @@ export default function AppRoutes() {
 					)}
 				/>
 				<Route path="/tickets-incidents" element={requireAuth(<IncidentTicketsPage />)} />
+				<Route path="/commandes" element={requireAuth(<OrderHistoryPage />)} />
+				<Route path="/commandes/:idCommande" element={requireAuth(<OrderDetailPage />)} />
 				<Route path="/fidelite" element={requireAuth(<LoyaltyPage />)} />
 				<Route path="/carte-interactive" element={<InteractiveMapPage />} />
 				<Route element={
@@ -203,9 +214,13 @@ export default function AppRoutes() {
 						accountType={accountType}
 					/>
 				}>
-					<Route path="/achat" element={<AchatPage />} />
+					<Route path="/produits/:idProduit" element={<ProductDetailPage />} />
+					<Route path="/achat" element={<Navigate to="/produits" replace />} />
 					<Route path="/produits" element={<ProductsPage />} />
 					<Route path="/panier" element={<PanierPage />} />
+					<Route path="/commande/livraison" element={requireAuth(<CheckoutDeliveryPage />)} />
+					<Route path="/commande/paiement" element={requireAuth(<CheckoutPaymentPage />)} />
+					<Route path="/commande/verification" element={requireAuth(<CheckoutReviewPage />)} />
 				</Route>
 				<Route
 					path="/compte"
@@ -217,6 +232,7 @@ export default function AppRoutes() {
 								user={sessionState.data?.user}
 								isProfessional={isProfessional}
 								professionalCompanies={professionalCompanies}
+								onProfileRefresh={refreshSession}
 							/>
 					)}
 				/>

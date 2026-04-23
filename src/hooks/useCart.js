@@ -35,6 +35,10 @@ export default function useCart(profile = null, initial = EMPTY_CART) {
 	const [cartId, setCartId] = useState(null);
 	const isServerCart = Boolean(profile);
 
+	// Tracks local items while not logged in so the login effect can read them
+	const localItemsRef = useRef(initial);
+	const prevProfileRef = useRef(profile);
+
 	const clearCartError = () => setCartError(null);
 
 	const getCartErrorMessage = (err) => {
@@ -144,14 +148,27 @@ export default function useCart(profile = null, initial = EMPTY_CART) {
 	const closeCart = () => setCartOpen(false);
 	const toggleCart = () => setCartOpen(v => !v);
 
-	// Load shopping cart items from backend on mount
+	// Keep localItemsRef in sync while not logged in
+	useEffect(() => {
+		if (!profile) {
+			localItemsRef.current = cartItems;
+		}
+	}, [profile, cartItems]);
+
+	// Load (and optionally merge local items into) the server cart on login
 	useEffect(() => {
 		let mounted = true;
 		if (!profile) {
 			setCartId(null);
 			setCartItems(initialCartRef.current);
+			prevProfileRef.current = null;
 			return () => { mounted = false; };
 		}
+
+		// Detect transition from unauthenticated → authenticated
+		const isLoginTransition = !prevProfileRef.current;
+		const pendingLocalItems = isLoginTransition ? [...localItemsRef.current] : [];
+		prevProfileRef.current = profile;
 
 		(async () => {
 			try {
@@ -163,6 +180,17 @@ export default function useCart(profile = null, initial = EMPTY_CART) {
 
 				if (!mounted) return;
 				setCartId(resolvedCartId);
+
+				// Merge pre-login local items into the server cart (best-effort)
+				for (const item of pendingLocalItems) {
+					const productId = getProductId(item.product);
+					if (!productId) continue;
+					try {
+						await shoppingCartService.addProductToShoppingCart(productId, item.quantity);
+					} catch {
+						// Silent: stock issues, deleted products, etc.
+					}
+				}
 
 				const data = await shoppingCartService.getCurrentShoppingCartItems();
 				if (!mounted) return;

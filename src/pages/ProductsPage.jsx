@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useOutletContext } from 'react-router';
+import { useNavigate, useOutletContext } from 'react-router';
 import Alert from '../components/Alert.jsx';
 import ProductGrid from '../components/ProductGrid';
 import PageShell from '../components/layout/PageShell.jsx';
@@ -9,6 +9,7 @@ import productsService from '../services/products';
 
 function ProductsPage() {
 	const { addToCart, cartError, clearCartError } = useOutletContext();
+	const navigate = useNavigate();
 	const [products, setProducts] = useState([]);
 	const [pagination, setPagination] = useState({
 		page: 1,
@@ -63,6 +64,12 @@ function ProductsPage() {
 		}));
 	};
 
+	const openProduct = (product) => {
+		const idProduit = product.idProduit ?? product.id ?? product._id;
+		if (idProduit == null) return;
+		navigate(`/produits/${idProduit}`);
+	};
+
 	if (loading) {
 		return (
 			<PageShell contentClassName="flex min-h-[50vh] items-center justify-center">
@@ -108,7 +115,7 @@ function ProductsPage() {
 				</div>
 			)}
 			<div className="mt-10">
-				<ProductGrid products={products} addToCart={addToCart} />
+				<ProductGrid products={products} addToCart={addToCart} onOpenProduct={openProduct} />
 			</div>
 			{pagination.totalPages > 1 && (
 				<div className="mt-8 flex flex-col gap-3 rounded-2xl bg-neutral-50 px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">

@@ -3,7 +3,7 @@ import { ActionButton } from '../Button.jsx';
 
 const commonAuthenticatedItems = [
 	{ icon: 'tune', label: 'Paramètres', path: '/compte' },
-	{ icon: 'receipt_long', label: 'Mes commandes', path: '/compte' },
+	{ icon: 'receipt_long', label: 'Mes commandes', path: '/commandes' },
 	{ icon: 'person', label: 'Mon compte', path: '/compte' },
 ];
 
