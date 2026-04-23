@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Navigate } from 'react-router';
 import { ActionButton } from '../components/Button.jsx';
 import PageShell from '../components/layout/PageShell.jsx';
 import SectionHeader from '../components/layout/SectionHeader.jsx';
 import SoftPanel from '../components/layout/SoftPanel.jsx';
 import SurfaceCard from '../components/layout/SurfaceCard.jsx';
+import useAuthProfile from '../features/auth/useAuthProfile';
 import {
   claimLoyaltyChallenge,
   fetchMyLoyalty,
@@ -15,10 +17,13 @@ function euro(value) {
 }
 
 export default function LoyaltyPage() {
+  const { profileState, sessionState } = useAuthProfile();
   const [loyalty, setLoyalty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const profile = profileState.data?.profile;
+  const accountType = profile?.accountType || sessionState.data?.user?.accountType || null;
 
   const loadLoyalty = async () => {
     setLoading(true);
@@ -45,6 +50,10 @@ export default function LoyaltyPage() {
     if (required <= 0) return 0;
     return Math.min((points / required) * 100, 100);
   }, [loyalty, points]);
+
+  if (!sessionState.isPending && accountType && accountType !== 'particulier') {
+    return <Navigate to="/compte" replace />;
+  }
 
   const onClaimChallenge = async (code) => {
     try {
@@ -166,6 +175,7 @@ export default function LoyaltyPage() {
                 )}
               </div>
             </div>
+
           </>
         ) : null}
       </SurfaceCard>

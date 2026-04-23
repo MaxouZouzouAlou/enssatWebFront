@@ -5,7 +5,6 @@ const commonAuthenticatedItems = [
 	{ icon: 'tune', label: 'Paramètres', path: '/compte' },
 	{ icon: 'receipt_long', label: 'Mes commandes', path: '/compte' },
 	{ icon: 'person', label: 'Mon compte', path: '/compte' },
-	{ icon: 'workspace_premium', label: 'Ma fidélité', path: '/fidelite' },
 ];
 
 export default function AccountMenu({ isAuthenticated, isProfessional, onClose, onSignOut }) {
@@ -41,9 +40,11 @@ export default function AccountMenu({ isAuthenticated, isProfessional, onClose, 
 		);
 	}
 
-	const items = isProfessional
-		? [...commonAuthenticatedItems, { icon: 'monitoring', label: 'Espace pro', path: '/espace-pro' }]
-		: commonAuthenticatedItems;
+	const items = [
+		...commonAuthenticatedItems,
+		...(isProfessional ? [] : [{ icon: 'workspace_premium', label: 'Ma fidélité', path: '/fidelite' }]),
+		...(isProfessional ? [{ icon: 'monitoring', label: 'Espace pro', path: '/espace-pro' }] : [])
+	];
 
 	return (
 		<div className="space-y-2">

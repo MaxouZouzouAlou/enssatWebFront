@@ -2,10 +2,13 @@ import { useState } from 'react';
 import Alert from '../../components/Alert.jsx';
 import { PrimaryButton, SecondaryButton } from '../../components/Button.jsx';
 import FormField from '../../components/FormField.jsx';
-import { authClient, registerAccount } from '../../services/auth-client';
+import { GOOGLE_AUTH_ENABLED, authClient, registerAccount } from '../../services/auth-client';
 import AccountTypeToggle from './AccountTypeToggle.jsx';
 import ProfessionalCompanyFields from './ProfessionalCompanyFields.jsx';
-import { hasErrors, validateRegisterForm } from './validation';
+import { hasErrors, normalizeRegisterForm, validateRegisterForm } from './validation';
+
+const verificationEmailStorageKey = 'register-verification-email';
+const REGISTER_DRAFT_KEY = 'register-draft';
 
 const emptyForm = {
 	email: '',
@@ -23,28 +26,65 @@ const emptyForm = {
 };
 
 export default function RegisterForm({ onSwitchToLogin }) {
-	const [accountType, setAccountType] = useState('particulier');
-	const [form, setForm] = useState(emptyForm);
+	const [accountType, setAccountType] = useState(() => {
+		const saved = window.sessionStorage.getItem(REGISTER_DRAFT_KEY);
+		return saved ? (JSON.parse(saved).accountType || 'particulier') : 'particulier';
+	});
+	const [form, setForm] = useState(() => {
+		const saved = window.sessionStorage.getItem(REGISTER_DRAFT_KEY);
+		if (!saved) return emptyForm;
+		const { accountType: _at, ...formData } = JSON.parse(saved);
+		return { ...emptyForm, ...formData, password: '', confirmPassword: '' };
+	});
 	const [loading, setLoading] = useState(false);
 	const [googleLoading, setGoogleLoading] = useState(false);
 	const [error, setError] = useState('');
 	const [fieldErrors, setFieldErrors] = useState({});
-	const [success, setSuccess] = useState('');
+	const [success, setSuccess] = useState(() => {
+		if (typeof window === 'undefined') return '';
+		return window.sessionStorage.getItem(verificationEmailStorageKey) || '';
+	});
+
+	const saveDraft = (nextForm, nextAccountType) => {
+		window.sessionStorage.setItem(REGISTER_DRAFT_KEY, JSON.stringify({
+			accountType: nextAccountType,
+			...nextForm,
+			password: '',
+			confirmPassword: ''
+		}));
+	};
+
+	const clearVerificationState = () => {
+		setSuccess('');
+		if (typeof window !== 'undefined') {
+			window.sessionStorage.removeItem(verificationEmailStorageKey);
+		}
+	};
 
 	const update = (field) => (event) => {
 		setFieldErrors((current) => ({ ...current, [field]: '' }));
-		setForm((current) => ({ ...current, [field]: event.target.value }));
+		setForm((current) => {
+			const next = { ...current, [field]: event.target.value };
+			saveDraft(next, accountType);
+			return next;
+		});
 	};
 
 	const updateCompany = (field) => (event) => {
 		setFieldErrors((current) => ({ ...current, [`entreprise.${field}`]: '' }));
-		setForm((current) => ({
-			...current,
-			entreprise: {
-				...current.entreprise,
-				[field]: event.target.value
-			}
-		}));
+		setForm((current) => {
+			const next = { ...current, entreprise: { ...current.entreprise, [field]: event.target.value } };
+			saveDraft(next, accountType);
+			return next;
+		});
+	};
+
+	const changeAccountType = (nextAccountType) => {
+		setAccountType(nextAccountType);
+		saveDraft(form, nextAccountType);
+		setError('');
+		setSuccess('');
+		setFieldErrors({});
 	};
 
 	const submit = async (event) => {
@@ -52,7 +92,8 @@ export default function RegisterForm({ onSwitchToLogin }) {
 		setError('');
 		setSuccess('');
 
-		const nextFieldErrors = validateRegisterForm(form, accountType);
+		const normalizedForm = normalizeRegisterForm(form, accountType);
+		const nextFieldErrors = validateRegisterForm(normalizedForm, accountType);
 		setFieldErrors(nextFieldErrors);
 		if (hasErrors(nextFieldErrors)) {
 			setError('Corrigez les champs indiques.');
@@ -63,13 +104,17 @@ export default function RegisterForm({ onSwitchToLogin }) {
 		try {
 			await registerAccount({
 				accountType,
-				email: form.email,
-				nom: form.nom,
-				prenom: form.prenom,
-				password: form.password,
-				entreprise: form.entreprise
+				email: normalizedForm.email,
+				nom: normalizedForm.nom,
+				prenom: normalizedForm.prenom,
+				password: normalizedForm.password,
+				entreprise: normalizedForm.entreprise
 			});
-			setSuccess('Compte cree. Consultez votre email pour verifier le compte avant connexion.');
+			window.sessionStorage.removeItem(REGISTER_DRAFT_KEY);
+			if (typeof window !== 'undefined') {
+				window.sessionStorage.setItem(verificationEmailStorageKey, normalizedForm.email);
+			}
+			setSuccess(normalizedForm.email);
 		} catch (registerError) {
 			setError(registerError.message);
 		} finally {
@@ -91,6 +136,31 @@ export default function RegisterForm({ onSwitchToLogin }) {
 		}
 	};
 
+	if (success) {
+		return (
+			<div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-5 sm:p-8">
+				<div className="mb-7 space-y-2">
+					<p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-600">Inscription</p>
+					<h2 className="font-title text-3xl font-semibold leading-tight text-secondary-900">Vérifiez votre email</h2>
+					<p className="text-sm text-secondary-600">
+						Un lien de confirmation a été envoyé à <strong>{success}</strong>. Cliquez dessus pour activer votre compte.
+					</p>
+				</div>
+				<p className="text-sm text-secondary-600">Pensez à vérifier vos spams si vous ne voyez pas l'email.</p>
+				<button
+					type="button"
+					className="mt-6 text-sm font-semibold text-primary-600 hover:text-primary-700"
+					onClick={() => {
+						clearVerificationState();
+						onSwitchToLogin();
+					}}
+				>
+					← Retour à la connexion
+				</button>
+			</div>
+		);
+	}
+
 	return (
 		<div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-5 sm:p-8">
 			<div className="mb-7 space-y-2">
@@ -99,9 +169,9 @@ export default function RegisterForm({ onSwitchToLogin }) {
 				<p className="text-sm text-secondary-600">Accédez aux produits locaux et suivez vos achats en toute simplicité.</p>
 			</div>
 
-			<AccountTypeToggle accountType={accountType} onChange={setAccountType} />
+			<AccountTypeToggle accountType={accountType} onChange={changeAccountType} />
 
-			<form className="space-y-4" onSubmit={submit}>
+			<form className="space-y-4" noValidate onSubmit={submit}>
 				{error ? <Alert>{error}</Alert> : null}
 				{success ? <Alert type="success">{success}</Alert> : null}
 
@@ -178,7 +248,7 @@ export default function RegisterForm({ onSwitchToLogin }) {
 				</PrimaryButton>
 			</form>
 
-			{accountType === 'particulier' ? (
+			{accountType === 'particulier' && GOOGLE_AUTH_ENABLED ? (
 				<>
 					<div className="my-6 flex items-center gap-3">
 						<div className="h-px flex-1 bg-neutral-300" />
@@ -193,7 +263,14 @@ export default function RegisterForm({ onSwitchToLogin }) {
 
 			<p className="mt-6 text-center text-sm text-neutral-600">
 				Déjà inscrit ?{' '}
-				<button type="button" className="font-semibold text-primary-600 hover:text-primary-700" onClick={onSwitchToLogin}>
+				<button
+					type="button"
+					className="font-semibold text-primary-600 hover:text-primary-700"
+					onClick={() => {
+						clearVerificationState();
+						onSwitchToLogin();
+					}}
+				>
 					Se connecter
 				</button>
 			</p>

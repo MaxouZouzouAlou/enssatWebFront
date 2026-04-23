@@ -15,6 +15,7 @@ import {
 } from 'recharts';
 import { ActionButton } from '../../components/Button.jsx';
 import DataTable from '../../components/DataTable.jsx';
+import ProfessionalCompanySwitcher from '../../components/ProfessionalCompanySwitcher.jsx';
 import MetricCard from '../../components/layout/MetricCard.jsx';
 import PageShell from '../../components/layout/PageShell.jsx';
 import SectionHeader from '../../components/layout/SectionHeader.jsx';
@@ -42,7 +43,13 @@ function RestrictedDashboardState({ title, message }) {
 	);
 }
 
-export default function ProfessionalDashboard({ accountType = 'particulier', professionalId }) {
+export default function ProfessionalDashboard({
+	accountType = 'particulier',
+	professionalId,
+	professionalCompanies = [],
+	selectedCompany = null,
+	onSelectCompany
+}) {
 	const isProfessional = accountType === 'professionnel' || accountType === 'pro';
 	const [dashboard, setDashboard] = useState(null);
 	const [loading, setLoading] = useState(false);
@@ -109,20 +116,30 @@ export default function ProfessionalDashboard({ accountType = 'particulier', pro
 	return (
 		<PageShell contentClassName="grid grid-cols-12 gap-5">
 			<header className="col-span-12 flex flex-col justify-between gap-4 md:flex-row md:items-start">
-				<SectionHeader
-					eyebrow="Espace pro"
-					title="Dashboard professionnel"
-				>
+				<SectionHeader eyebrow="Espace pro" title="Dashboard professionnel">
 					<p>
 						Suivez vos performances en temps reel: chiffre d affaires, commandes,
 						produits les plus vendus et habitudes d achat.
 					</p>
+					{selectedCompany ? (
+						<p className="mt-2 text-sm text-secondary-700">
+							Entreprise active: <strong>{selectedCompany.nom}</strong> · SIRET {selectedCompany.siret}
+						</p>
+					) : null}
 					{loading ? <p className="mt-2 text-sm text-neutral-600">Chargement du dashboard...</p> : null}
 					{error ? <p className="mt-2 text-sm font-semibold text-red-700">{error}</p> : null}
 				</SectionHeader>
-				<ActionButton className="h-12 px-5" type="button">
-					Exporter le rapport
-				</ActionButton>
+				<div className="flex w-full max-w-md flex-col gap-3 md:w-auto">
+					<ProfessionalCompanySwitcher
+						companies={professionalCompanies}
+						onSelectCompany={onSelectCompany}
+						selectedCompanyId={selectedCompany?.id}
+						title="Entreprise suivie"
+					/>
+					<ActionButton className="h-12 px-5" type="button">
+						Exporter le rapport
+					</ActionButton>
+				</div>
 			</header>
 
 			<section className="col-span-12 grid gap-4 md:grid-cols-2 xl:grid-cols-4">

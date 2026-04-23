@@ -9,8 +9,8 @@ import HeaderPopover from './HeaderPopover.jsx';
 import NavTabs from './NavTabs.jsx';
 import NotificationsMenu from './NotificationsMenu.jsx';
 
-const NAV_ICON_CLASS = 'text-secondary-500 hover:text-primary-600 hover:bg-primary-50';
-const ACTIVE_NAV_ICON_CLASS = 'bg-primary-100 text-primary-700';
+const NAV_ICON_CLASS = 'text-secondary-500 hover:bg-primary-100 hover:text-primary-800';
+const ACTIVE_NAV_ICON_CLASS = 'bg-primary-100 text-primary-800';
 
 function Header({
   cartCount = 0,

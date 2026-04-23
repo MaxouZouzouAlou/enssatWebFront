@@ -1,0 +1,71 @@
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import RegisterForm from './RegisterForm.jsx';
+import { registerAccount } from '../../services/auth-client';
+
+jest.mock('../../services/auth-client', () => ({
+	authClient: {
+		signIn: {
+			social: jest.fn()
+		}
+	},
+	registerAccount: jest.fn()
+}));
+
+beforeEach(() => {
+	registerAccount.mockReset();
+	window.sessionStorage.clear();
+});
+
+test('shows application validation errors for missing passwords', () => {
+	render(<RegisterForm onSwitchToLogin={jest.fn()} />);
+
+	fireEvent.click(screen.getByRole('button', { name: /^créer le compte$/i }));
+
+	expect(screen.getByText('Mot de passe requis.')).toBeInTheDocument();
+	expect(screen.getByText('Confirmation requise.')).toBeInTheDocument();
+	expect(screen.getByText('Corrigez les champs indiques.')).toBeInTheDocument();
+	expect(registerAccount).not.toHaveBeenCalled();
+});
+
+test('submits a normalized registration payload', async () => {
+	registerAccount.mockResolvedValueOnce({});
+	render(<RegisterForm onSwitchToLogin={jest.fn()} />);
+
+	fireEvent.change(screen.getByLabelText('Prenom'), { target: { value: '  Alice  ' } });
+	fireEvent.change(screen.getByLabelText('Nom'), { target: { value: '  Martin  ' } });
+	fireEvent.change(screen.getByLabelText('Email'), { target: { value: '  ALICE@example.COM  ' } });
+	fireEvent.change(screen.getByLabelText(/mot de passe/i, { selector: 'input' }), { target: { value: 'password123' } });
+	fireEvent.change(screen.getByLabelText(/confirmation/i, { selector: 'input' }), { target: { value: 'password123' } });
+	fireEvent.click(screen.getByRole('button', { name: /^créer le compte$/i }));
+
+	await waitFor(() => expect(registerAccount).toHaveBeenCalledTimes(1));
+	expect(registerAccount).toHaveBeenCalledWith({
+		accountType: 'particulier',
+		email: 'alice@example.com',
+		nom: 'Martin',
+		prenom: 'Alice',
+		password: 'password123',
+		entreprise: undefined
+	});
+});
+
+test('restores the verification step from session storage', () => {
+	window.sessionStorage.setItem('register-verification-email', 'alice@example.com');
+
+	render(<RegisterForm onSwitchToLogin={jest.fn()} />);
+
+	expect(screen.getByRole('heading', { name: /v.rifiez votre email/i })).toBeInTheDocument();
+	expect(screen.getByText(/alice@example\.com/i)).toBeInTheDocument();
+});
+
+test('clears the stored verification state when returning to login', () => {
+	const onSwitchToLogin = jest.fn();
+	window.sessionStorage.setItem('register-verification-email', 'alice@example.com');
+
+	render(<RegisterForm onSwitchToLogin={onSwitchToLogin} />);
+
+	fireEvent.click(screen.getByRole('button', { name: /retour . la connexion/i }));
+
+	expect(window.sessionStorage.getItem('register-verification-email')).toBeNull();
+	expect(onSwitchToLogin).toHaveBeenCalledTimes(1);
+});

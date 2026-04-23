@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from 'react';
 import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router';
 import PageTransition from '../components/PageTransition.jsx';
 import Header from '../components/header/Header.jsx';
@@ -14,6 +15,8 @@ import PanierPage from '../pages/PanierPage.jsx';
 import ProfessionalDashboardPage from '../pages/ProfessionalDashboardPage.jsx';
 import ProductsPage from '../pages/ProductsPage.jsx';
 import RegisterPage from '../pages/RegisterPage.jsx';
+import ResetPasswordPage from '../pages/ResetPasswordPage.jsx';
+import SettingsPage from '../pages/SettingsPage.jsx';
 import { authClient } from '../services/auth-client';
 
 const protectedPaths = new Set(['/compte', '/fidelite', '/dashboard-producteur', '/espace-pro', '/tickets-incidents']);
@@ -22,7 +25,17 @@ export function getLogoutRedirectPath(pathname) {
 	return protectedPaths.has(pathname) ? '/' : null;
 }
 
-function MarketplaceLayout({ addToCart, cartError, cartItems, clearCartError, removeFromCart, updateQuantity, profile, isAuthenticated, accountType }) {
+function MarketplaceLayout({
+	addToCart,
+	cartError,
+	cartItems,
+	clearCartError,
+	removeFromCart,
+	updateQuantity,
+	profile,
+	isAuthenticated,
+	accountType
+}) {
 	return <Outlet context={{ addToCart, cartError, cartItems, clearCartError, removeFromCart, updateQuantity, profile, isAuthenticated, accountType }} />;
 }
 
@@ -60,13 +73,50 @@ export default function AppRoutes() {
 		await sessionState.refetch?.();
 	};
 
-	if (sessionState.isPending) return <LoadingPage />;
-
 	const accountType = profile?.accountType || sessionState.data?.user?.accountType || 'particulier';
 	const isAuthenticated = Boolean(sessionState.data);
 	const isProfessional = accountType === 'professionnel' || accountType === 'pro';
 	const professionalId = profile?.professionnel?.id;
 	const isProfileLoading = Boolean(profileState.loading);
+	const professionalCompanies = useMemo(() => {
+		if (!profile?.professionnel) return [];
+
+		if (Array.isArray(profile.professionnel.entreprises) && profile.professionnel.entreprises.length > 0) {
+			return profile.professionnel.entreprises;
+		}
+
+		if (profile.professionnel.entreprise) {
+			return [profile.professionnel.entreprise];
+		}
+
+		return [];
+	}, [profile]);
+	const [selectedProfessionalCompanyId, setSelectedProfessionalCompanyId] = useState(null);
+
+	useEffect(() => {
+		if (!isProfessional || !professionalCompanies.length) {
+			setSelectedProfessionalCompanyId(null);
+			return;
+		}
+
+		const companyExists = professionalCompanies.some(
+			(company) => String(company.id) === String(selectedProfessionalCompanyId)
+		);
+
+		if (!companyExists) {
+			setSelectedProfessionalCompanyId(String(professionalCompanies[0].id));
+		}
+	}, [isProfessional, professionalCompanies, selectedProfessionalCompanyId]);
+
+	const selectedProfessionalCompany = useMemo(() => {
+		if (!professionalCompanies.length) return null;
+		return (
+			professionalCompanies.find((company) => String(company.id) === String(selectedProfessionalCompanyId)) ||
+			professionalCompanies[0]
+		);
+	}, [professionalCompanies, selectedProfessionalCompanyId]);
+
+	if (sessionState.isPending) return <LoadingPage />;
 
 	const requireGuest = (element) => (
 		isAuthenticated ? <Navigate to="/compte" replace /> : element
@@ -95,6 +145,7 @@ export default function AppRoutes() {
 					path="/register"
 					element={requireGuest(<RegisterPage onSwitchToLogin={() => navigate('/login')} />)}
 				/>
+				<Route path="/reset-password" element={<ResetPasswordPage />} />
 			</Route>
 
 			{/* Reste de l'app — avec header et footer */}
@@ -124,7 +175,15 @@ export default function AppRoutes() {
 				/>
 				<Route
 					path="/espace-pro"
-					element={requireProfessional(<ProfessionalDashboardPage accountType={accountType} professionalId={professionalId} />)}
+					element={requireProfessional(
+						<ProfessionalDashboardPage
+							accountType={accountType}
+							professionalId={professionalId}
+							professionalCompanies={professionalCompanies}
+							selectedCompany={selectedProfessionalCompany}
+							onSelectCompany={setSelectedProfessionalCompanyId}
+						/>
+					)}
 				/>
 				<Route path="/tickets-incidents" element={requireAuth(<IncidentTicketsPage />)} />
 				<Route path="/fidelite" element={requireAuth(<LoyaltyPage />)} />
@@ -154,7 +213,18 @@ export default function AppRoutes() {
 								signOut={signOut}
 								user={sessionState.data?.user}
 								isProfessional={isProfessional}
+								professionalCompanies={professionalCompanies}
 							/>
+					)}
+				/>
+				<Route
+					path="/parametres"
+					element={requireAuth(
+						<SettingsPage
+							profile={profile}
+							user={sessionState.data?.user}
+							onSaved={refreshSession}
+						/>
 					)}
 				/>
 				<Route path="*" element={<Navigate to="/" replace />} />
