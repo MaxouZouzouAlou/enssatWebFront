@@ -5,11 +5,13 @@ export async function fetchMapLocations() {
     credentials: 'include',
   });
 
+  const data = await response.json().catch(() => ({}));
+
   if (!response.ok) {
-    throw new Error('Impossible de charger les lieux de vente.');
+    throw new Error(data.error || 'Impossible de charger les lieux de vente.');
   }
 
-  return response.json();
+  return data;
 }
 
 export async function fetchOffersByLocation(idLieu) {
@@ -17,9 +19,11 @@ export async function fetchOffersByLocation(idLieu) {
     credentials: 'include',
   });
 
+  const data = await response.json().catch(() => ({}));
+
   if (!response.ok) {
-    throw new Error('Impossible de charger les offres de ce lieu.');
+    throw new Error(data.error || 'Impossible de charger les offres de ce lieu.');
   }
 
-  return response.json();
+  return data;
 }
