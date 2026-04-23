@@ -75,7 +75,7 @@ export async function updateProductForProfessional(idProfessionnel, idProduit, p
         if (product.bio != null) fd.append('bio', String(product.bio));
         if (product.tva != null) fd.append('tva', String(product.tva));
         if (product.reductionPro != null) fd.append('reductionPro', String(product.reductionPro));
-        if (product.visible != null) fd.append('visible', String(product.visible));
+        if (product.visible != null) fd.append('visible', product.visible ? '1' : '0');
         fd.append('image', product.image);
 
         res = await fetch(url, {
@@ -84,11 +84,14 @@ export async function updateProductForProfessional(idProfessionnel, idProduit, p
             body: fd,
         });
     } else {
+        // ensure visible is a primitive (boolean/number) when sending JSON
+        const payload = { ...product };
+        if (payload.visible != null) payload.visible = payload.visible ? 1 : 0;
         res = await fetch(url, {
             method: 'PUT',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(product),
+            body: JSON.stringify(payload),
         });
     }
 

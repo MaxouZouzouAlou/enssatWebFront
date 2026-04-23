@@ -281,13 +281,13 @@ useEffect(() => {
 														) : (
 															<div className="h-12 w-12 rounded-md bg-neutral-50 border flex items-center justify-center text-xs text-neutral-400">Image</div>
 														)}
-														<input type="file" accept="image/*" onChange={(e) => setEditingValues({...editingValues, image: e.target.files && e.target.files[0] ? e.target.files[0] : null})} />
+												<input type="file" accept="image/*" onChange={(e) => setEditingValues({...editingValues, image: e.target.files && e.target.files[0] ? e.target.files[0] : null})} />
 													</div>
 													<input className="w-full border rounded px-2 py-1" value={editingValues.nomProduit ?? editingValues.nom ?? p.nomProduit ?? p.nom ?? ''} onChange={(e) => setEditingValues({...editingValues, nomProduit: e.target.value})} />
 													<div className="grid grid-cols-3 gap-2">
 														<input type="number" step="0.01" className="border rounded px-2 py-1" value={editingValues.prix ?? p.prix} onChange={(e) => setEditingValues({...editingValues, prix: e.target.value})} />
 														<input type="number" step="1" className="border rounded px-2 py-1" value={editingValues.stock ?? p.stock} onChange={(e) => setEditingValues({...editingValues, stock: e.target.value})} />
-														<label className="flex items-center gap-2"><input type="checkbox" checked={editingValues.visible ?? (p.visible === 1 || p.visible === true)} onChange={(e) => setEditingValues({...editingValues, visible: e.target.checked ? 1 : 0})} /> Visible</label>
+														<label className="flex items-center gap-2"><input type="checkbox" checked={editingValues.visible ?? Boolean(p.visible)} onChange={(e) => setEditingValues({...editingValues, visible: e.target.checked})} /> Visible</label>
 													</div>
 													<div className="flex gap-2 justify-end">
 														<button type="button" className="px-3 py-1 bg-gray-200 rounded" onClick={() => { setEditingId(null); setEditingValues({}); }}>Annuler</button>
@@ -324,7 +324,7 @@ useEffect(() => {
 													</div>
 													<div className="flex items-center gap-2">
 														<div className="text-sm text-gray-600">Stock: {p.stock ?? '—'}</div>
-														<button className="px-3 py-1 bg-gray-100 rounded" onClick={() => { setEditingId(p.idProduit || p.id); setEditingValues({ nomProduit: p.nomProduit ?? p.nom ?? p.name, prix: p.prix, stock: p.stock, visible: p.visible }); }}>Editer</button>
+														<button className="px-3 py-1 bg-gray-100 rounded" onClick={() => { setEditingId(p.idProduit || p.id); setEditingValues({ nomProduit: p.nomProduit ?? p.nom ?? p.name, prix: p.prix, stock: p.stock, visible: Boolean(p.visible) }); }}>Editer</button>
 													</div>
 												</div>
 											)}
