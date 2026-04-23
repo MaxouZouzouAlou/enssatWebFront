@@ -124,6 +124,8 @@ export default function ProductCard({ product, onAdd = () => {}, onOpenReviews =
   const image = resolveProductImageUrl(getProductImage(product));
   const stockLabel = formatProductStock(product, stock);
   const canOpenProduct = typeof onOpenProduct === 'function';
+  const distanceKm = Number(product.distanceKm);
+  const hasDistance = Number.isFinite(distanceKm);
 
   useEffect(() => {
     setImageError(false);
@@ -199,6 +201,11 @@ export default function ProductCard({ product, onAdd = () => {}, onOpenReviews =
           <div className="min-w-0">
             <h2 className={`truncate text-lg font-semibold leading-tight ${categoryNameColors[category] || categoryNameColors.Autre}`}>{name}</h2>
             <p className="mt-1.5 truncate text-sm font-medium text-secondary-500">{producer}</p>
+            {hasDistance ? (
+              <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-primary-700">
+                A {distanceKm.toFixed(1)} km
+              </p>
+            ) : null}
           </div>
           <div className="shrink-0 text-right">
             {price != null ? (

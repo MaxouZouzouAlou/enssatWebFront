@@ -13,6 +13,8 @@ jest.mock('../services/auth-client', () => ({
 }));
 
 jest.mock('../pages/InteractiveMapPage.jsx', () => () => null);
+jest.mock('../pages/CheckoutDeliveryPage.jsx', () => () => null);
+jest.mock('../pages/OrderDetailPage.jsx', () => () => null);
 
 
 test('redirects logout from protected pages to home', () => {

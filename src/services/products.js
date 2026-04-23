@@ -1,10 +1,38 @@
 import { API_BASE_URL } from './auth-client.js';
 
-async function getListProducts({ page = 1, limit = 9 } = {}) {
-	const params = new URLSearchParams({
-		page: String(page),
-		limit: String(limit),
-	});
+function appendIfPresent(params, key, value) {
+	if (value == null || value === '') return;
+	params.set(key, String(value));
+}
+
+async function getListProducts({
+	page = 1,
+	limit = 9,
+	q = '',
+	natures = [],
+	bio = null,
+	enStock = null,
+	prixMin = null,
+	prixMax = null,
+	sort = 'alpha_asc'
+} = {}) {
+	const params = new URLSearchParams();
+	params.set('page', String(page));
+	params.set('limit', String(limit));
+	appendIfPresent(params, 'q', String(q || '').trim());
+	if (Array.isArray(natures) && natures.length) {
+		params.set('nature', natures.join(','));
+	}
+	if (bio !== null) {
+		params.set('bio', String(Boolean(bio)));
+	}
+	if (enStock !== null) {
+		params.set('enStock', String(Boolean(enStock)));
+	}
+	appendIfPresent(params, 'prixMin', prixMin);
+	appendIfPresent(params, 'prixMax', prixMax);
+	appendIfPresent(params, 'sort', sort);
+
 	const response = await fetch(`${API_BASE_URL}/products/?${params.toString()}`, {
 		method: 'GET',
 		credentials: 'include',

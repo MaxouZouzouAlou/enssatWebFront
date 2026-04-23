@@ -2,9 +2,8 @@ import { useNavigate } from 'react-router';
 import { ActionButton } from '../Button.jsx';
 
 const commonAuthenticatedItems = [
-	{ icon: 'tune', label: 'Paramètres', path: '/compte' },
-	{ icon: 'receipt_long', label: 'Mes commandes', path: '/commandes' },
 	{ icon: 'person', label: 'Mon compte', path: '/compte' },
+	{ icon: 'receipt_long', label: 'Mes commandes', path: '/commandes' },
 ];
 
 export default function AccountMenu({ isAuthenticated, isProfessional, onClose, onSignOut }) {

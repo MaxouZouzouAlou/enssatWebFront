@@ -97,6 +97,13 @@ export default function OrderDetailPage() {
 
 	return (
 		<PageShell contentClassName="max-w-5xl">
+			<Link
+				to="/commandes"
+				className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-primary-700 hover:text-primary-800"
+			>
+				<span className="material-symbols-rounded text-base">arrow_back</span>
+				Mes commandes
+			</Link>
 			<SectionHeader eyebrow="Commande" title={`Commande #${order.idCommande}`}>
 				<p>Consultez le détail de votre commande, ses lignes et son mode de livraison.</p>
 			</SectionHeader>
@@ -112,9 +119,6 @@ export default function OrderDetailPage() {
 					</div>
 					<div className="flex flex-col items-start gap-3 sm:items-end">
 						<p className="text-2xl font-bold text-secondary-900">{Number(order.prixTotal || 0).toFixed(2)} €</p>
-						<Link className="text-sm font-semibold text-primary-700 hover:text-primary-800" to="/commandes">
-							Retour à l'historique
-						</Link>
 					</div>
 				</div>
 

@@ -45,13 +45,13 @@ function getLocationCoordinates(location) {
   return [latitude, longitude];
 }
 
-function MapViewportController({ center }) {
+function MapViewportController({ center, zoom }) {
   const map = useMap();
 
   useEffect(() => {
     if (!Array.isArray(center) || center.length !== 2) return;
-    map.setView(center);
-  }, [center, map]);
+    map.setView(center, zoom);
+  }, [center, map, zoom]);
 
   return null;
 }
@@ -74,16 +74,14 @@ export default function InteractiveMapPage() {
           : [];
 
         setLocations(validLocations);
-        if (validLocations.length > 0) {
-          setSelectedLieuId(validLocations[0].idLieu);
-        } else {
-          setSelectedLieuId(null);
-        }
+        setSelectedLieuId(null);
+        setSelectedData(null);
         setError('');
       } catch (err) {
         setError(err.message || 'Erreur de chargement de la carte.');
         setLocations([]);
         setSelectedLieuId(null);
+        setSelectedData(null);
       } finally {
         setLoadingLocations(false);
       }
@@ -114,13 +112,6 @@ export default function InteractiveMapPage() {
     run();
   }, [selectedLieuId]);
 
-  const center = useMemo(() => {
-    if (!locations.length) return [48.1173, -1.6778];
-    const lat = locations.reduce((sum, loc) => sum + Number(loc.coordinates?.latitude || 0), 0) / locations.length;
-    const lng = locations.reduce((sum, loc) => sum + Number(loc.coordinates?.longitude || 0), 0) / locations.length;
-    return [lat, lng];
-  }, [locations]);
-
   const offers = useMemo(() => {
     if (!Array.isArray(selectedData?.offres)) return [];
     return selectedData.offres.map((offer, index) => ({
@@ -136,6 +127,26 @@ export default function InteractiveMapPage() {
     () => locations.find((location) => String(location.idLieu) === String(selectedLieuId)) || null,
     [locations, selectedLieuId]
   );
+  const center = useMemo(() => {
+    const selectedCoordinates = getLocationCoordinates(selectedLocation);
+    if (selectedCoordinates) return selectedCoordinates;
+    if (!locations.length) return [48.1173, -1.6778];
+    const lat = locations.reduce((sum, loc) => sum + Number(loc.coordinates?.latitude || 0), 0) / locations.length;
+    const lng = locations.reduce((sum, loc) => sum + Number(loc.coordinates?.longitude || 0), 0) / locations.length;
+    return [lat, lng];
+  }, [locations, selectedLocation]);
+  const mapZoom = selectedLocation ? 14 : 11;
+  const showLocationList = !selectedLieuId;
+
+  const openLocation = (locationId) => {
+    setSelectedLieuId(locationId);
+  };
+
+  const resetSelection = () => {
+    setSelectedLieuId(null);
+    setSelectedData(null);
+    setError('');
+  };
 
   return (
     <main className="mx-auto w-[min(1240px,calc(100%-2rem))] py-8">
@@ -157,12 +168,14 @@ export default function InteractiveMapPage() {
         <article className="xl:col-span-7 rounded-2xl border border-neutral-200 bg-neutral-50 shadow-[0_16px_35px_rgba(29,52,34,.1)] overflow-hidden">
           <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-3">
             <h2 className="text-lg font-semibold text-secondary-900">Lieux de vente</h2>
-            <span className="text-sm text-secondary-500">{locations.length} lieu(x)</span>
+            <span className="text-sm text-secondary-500">
+              {showLocationList ? `${locations.length} lieu(x)` : selectedLocation?.typeLieu || 'Lieu selectionne'}
+            </span>
           </div>
 
           <div className="h-[520px] w-full">
-            <MapContainer center={center} zoom={11} scrollWheelZoom className="h-full w-full">
-              <MapViewportController center={center} />
+            <MapContainer center={center} zoom={mapZoom} scrollWheelZoom className="h-full w-full">
+              <MapViewportController center={center} zoom={mapZoom} />
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -177,7 +190,7 @@ export default function InteractiveMapPage() {
                     key={location.idLieu}
                     position={coordinates}
                     eventHandlers={{
-                      click: () => setSelectedLieuId(location.idLieu),
+                      click: () => openLocation(location.idLieu),
                     }}
                   >
                     <Popup>
@@ -194,7 +207,21 @@ export default function InteractiveMapPage() {
         </article>
 
         <article className="xl:col-span-5 rounded-2xl border border-neutral-200 bg-neutral-50 p-4 shadow-[0_16px_35px_rgba(29,52,34,.1)]">
-          <h2 className="text-lg font-semibold text-secondary-900">Offres du lieu selectionne</h2>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-lg font-semibold text-secondary-900">
+              {showLocationList ? 'Liste des points de vente' : 'Offres du lieu selectionne'}
+            </h2>
+            {!showLocationList ? (
+              <button
+                type="button"
+                onClick={resetSelection}
+                className="inline-flex items-center gap-1 rounded-full border border-neutral-300 bg-white px-3 py-1.5 text-sm font-semibold text-secondary-700 transition hover:border-primary-300 hover:text-primary-700"
+              >
+                <span className="material-symbols-rounded text-base">arrow_back</span>
+                Retour a la liste
+              </button>
+            ) : null}
+          </div>
 
           {loadingLocations && <p className="mt-3 text-sm text-secondary-600">Chargement des lieux...</p>}
 
@@ -202,47 +229,76 @@ export default function InteractiveMapPage() {
             <p className="mt-3 text-sm text-secondary-600">Aucun lieu de vente exploitable pour le moment.</p>
           )}
 
-          {selectedLieu && (
-            <div className="mt-3 rounded-xl border border-neutral-200 bg-white p-3">
-              <p className="font-semibold text-secondary-900">{selectedLieu.typeLieu || 'Lieu de vente'}</p>
-              <p className="mt-1 text-sm text-secondary-600">{formatAddress(selectedLieu)}</p>
-              {selectedLieu.horaires && <p className="mt-1 text-xs text-secondary-500">Horaires: {selectedLieu.horaires}</p>}
+          {showLocationList ? (
+            <div className="mt-4 space-y-3 max-h-[420px] overflow-auto pr-1">
+              {locations.map((location) => (
+                <button
+                  key={location.idLieu}
+                  type="button"
+                  onClick={() => openLocation(location.idLieu)}
+                  aria-label={`Ouvrir ${location.typeLieu || 'ce lieu de vente'}`}
+                  className="block w-full rounded-xl border border-neutral-200 bg-white p-4 text-left transition hover:border-primary-300 hover:bg-primary-50/40"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-semibold text-secondary-900">{location.typeLieu || 'Lieu de vente'}</p>
+                      <p className="mt-1 text-sm text-secondary-600">{formatAddress(location)}</p>
+                    </div>
+                    <span className="rounded-full bg-primary-100 px-2 py-0.5 text-xs font-semibold text-primary-700">
+                      {Number(location.offresCount || 0)} offre(s)
+                    </span>
+                  </div>
+                  {location.horaires ? (
+                    <p className="mt-2 text-xs text-secondary-500">Horaires: {location.horaires}</p>
+                  ) : null}
+                </button>
+              ))}
             </div>
-          )}
-
-          {loadingOffers && <p className="mt-4 text-sm text-secondary-600">Chargement des offres...</p>}
-
-          {!loadingOffers && !selectedLieu && selectedLocation && error && (
-            <p className="mt-4 text-sm text-secondary-600">
-              Impossible de charger les offres pour {selectedLocation.typeLieu || 'ce lieu'}.
-            </p>
-          )}
-
-          {!loadingOffers && selectedLieu && offers.length === 0 && (
-            <p className="mt-4 text-sm text-secondary-600">Aucune offre visible pour ce lieu pour le moment.</p>
-          )}
-
-          <div className="mt-4 space-y-3 max-h-[360px] overflow-auto pr-1">
-            {offers.map((offer) => (
-              <div key={offer._key} className="rounded-xl border border-neutral-200 bg-white p-3">
-                <div className="flex items-start justify-between gap-3">
-                  <h3 className="font-semibold text-secondary-900">{offer.nom}</h3>
-                  <span className="rounded-full bg-primary-100 px-2 py-0.5 text-xs font-semibold text-primary-700">
-                    {formatPrice(offer.prix)} / {unitLabel(offer)}
-                  </span>
+          ) : (
+            <>
+              {selectedLieu && (
+                <div className="mt-3 rounded-xl border border-neutral-200 bg-white p-3">
+                  <p className="font-semibold text-secondary-900">{selectedLieu.typeLieu || 'Lieu de vente'}</p>
+                  <p className="mt-1 text-sm text-secondary-600">{formatAddress(selectedLieu)}</p>
+                  {selectedLieu.horaires && <p className="mt-1 text-xs text-secondary-500">Horaires: {selectedLieu.horaires}</p>}
                 </div>
-                <p className="mt-1 text-sm text-secondary-600">
-                  {offer.nature} • {offer.bio ? 'Bio' : 'Conventionnel'} • Stock: {offer.stock}
+              )}
+
+              {loadingOffers && <p className="mt-4 text-sm text-secondary-600">Chargement des offres...</p>}
+
+              {!loadingOffers && !selectedLieu && selectedLocation && error && (
+                <p className="mt-4 text-sm text-secondary-600">
+                  Impossible de charger les offres pour {selectedLocation.typeLieu || 'ce lieu'}.
                 </p>
-                <p className="mt-1 text-sm text-secondary-600">
-                  Producteur: {offer.producteur?.prenom} {offer.producteur?.nom}
-                </p>
-                {offer.entreprise?.nom && (
-                  <p className="mt-1 text-sm text-secondary-600">Entreprise: {offer.entreprise.nom}</p>
-                )}
+              )}
+
+              {!loadingOffers && selectedLieu && offers.length === 0 && (
+                <p className="mt-4 text-sm text-secondary-600">Aucune offre visible pour ce lieu pour le moment.</p>
+              )}
+
+              <div className="mt-4 space-y-3 max-h-[360px] overflow-auto pr-1">
+                {offers.map((offer) => (
+                  <div key={offer._key} className="rounded-xl border border-neutral-200 bg-white p-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <h3 className="font-semibold text-secondary-900">{offer.nom}</h3>
+                      <span className="rounded-full bg-primary-100 px-2 py-0.5 text-xs font-semibold text-primary-700">
+                        {formatPrice(offer.prix)} / {unitLabel(offer)}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm text-secondary-600">
+                      {offer.nature} • {offer.bio ? 'Bio' : 'Conventionnel'} • Stock: {offer.stock}
+                    </p>
+                    <p className="mt-1 text-sm text-secondary-600">
+                      Producteur: {offer.producteur?.prenom} {offer.producteur?.nom}
+                    </p>
+                    {offer.entreprise?.nom && (
+                      <p className="mt-1 text-sm text-secondary-600">Entreprise: {offer.entreprise.nom}</p>
+                    )}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            </>
+          )}
         </article>
       </section>
     </main>
