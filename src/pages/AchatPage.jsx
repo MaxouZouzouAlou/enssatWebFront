@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useOutletContext } from 'react-router';
 import achatService from '../services/achatPage';
 import ProductGrid from '../components/ProductGrid';
+import ProductFilter from '../components/ProductFilter';
+import ProductSort from '../components/ProductSort';
 import PageShell from '../components/layout/PageShell.jsx';
 import SectionHeader from '../components/layout/SectionHeader.jsx';
 import SurfaceCard from '../components/layout/SurfaceCard.jsx';
@@ -9,6 +11,8 @@ import SurfaceCard from '../components/layout/SurfaceCard.jsx';
 function AchatPage() {
 	const { addToCart } = useOutletContext();
 	const [products, setProducts] = useState([]);
+	const [selectedNatures, setSelectedNatures] = useState([]);
+	const [sortOrder, setSortOrder] = useState('none');
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
 
@@ -30,6 +34,49 @@ function AchatPage() {
 			mounted = false;
 		};
 	}, []);
+
+	// Memoized filtered and sorted products
+	const filteredAndSortedProducts = useMemo(() => {
+		let result = selectedNatures.length > 0 
+			? products.filter(p => selectedNatures.includes(p.nature))
+			: products;
+
+		// Apply sorting
+		switch (sortOrder) {
+			case 'price-asc':
+				result = [...result].sort((a, b) => {
+					const priceA = parseFloat(a.prix ?? a.price ?? 0);
+					const priceB = parseFloat(b.prix ?? b.price ?? 0);
+					return priceA - priceB;
+				});
+				break;
+			case 'price-desc':
+				result = [...result].sort((a, b) => {
+					const priceA = parseFloat(a.prix ?? a.price ?? 0);
+					const priceB = parseFloat(b.prix ?? b.price ?? 0);
+					return priceB - priceA;
+				});
+				break;
+			case 'name-asc':
+				result = [...result].sort((a, b) => {
+					const nameA = (a.nom ?? a.name ?? '').toLowerCase();
+					const nameB = (b.nom ?? b.name ?? '').toLowerCase();
+					return nameA.localeCompare(nameB, 'fr');
+				});
+				break;
+			case 'name-desc':
+				result = [...result].sort((a, b) => {
+					const nameA = (a.nom ?? a.name ?? '').toLowerCase();
+					const nameB = (b.nom ?? b.name ?? '').toLowerCase();
+					return nameB.localeCompare(nameA, 'fr');
+				});
+				break;
+			default:
+				break;
+		}
+
+		return result;
+	}, [products, selectedNatures, sortOrder]);
 
 	if (loading) {
 		return (
@@ -60,7 +107,19 @@ function AchatPage() {
 				<p>Produits frais, de saison et proposés par les producteurs référencés.</p>
 			</SectionHeader>
 			<div className="mt-10">
-				<ProductGrid products={products} addToCart={addToCart} />
+				<ProductFilter 
+					products={products} 
+					selectedNatures={selectedNatures}
+					onNatureChange={setSelectedNatures}
+				/>
+				<ProductSort 
+					sortOrder={sortOrder}
+					onSortChange={setSortOrder}
+				/>
+				<ProductGrid 
+					products={filteredAndSortedProducts} 
+					addToCart={addToCart} 
+				/>
 			</div>
 		</PageShell>
 	);
