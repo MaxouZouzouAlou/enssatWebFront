@@ -71,7 +71,7 @@ function QuantityStepper({ label, min, step, suffix, value, onBlur, onChange }) 
   );
 }
 
-export default function ProductCard({ product, onAdd = () => {} }) {
+export default function ProductCard({ product, onAdd = () => {}, onOpenReviews = () => {} }) {
   const name = product.nom ?? product.name ?? product.title ?? 'Sans nom';
   const priceRaw = product.prix ?? product.price;
   const price = priceRaw != null && priceRaw !== '' ? Number(priceRaw).toFixed(2) : null;
@@ -79,6 +79,11 @@ export default function ProductCard({ product, onAdd = () => {} }) {
   const producer = product.producteur ?? product.professionnel ?? product.entrepriseNom ?? product.sellerName ?? 'Producteur local';
   const stock = product.stock ?? null;
   const bio = product.bio === 1 || product.bio === '1' || product.bio === true;
+  const visible = product.visible === 1 || product.visible === '1' || product.visible === true;
+  const noteMoyenneProduit = Number(product.noteMoyenneProduit ?? 0);
+  const nombreAvisProduit = Number(product.nombreAvisProduit ?? 0);
+  const noteMoyenneProducteur = Number(product.noteMoyenneProducteur ?? 0);
+  const nombreAvisProducteur = Number(product.nombreAvisProducteur ?? 0);
   const unitProduct = isUnitProduct(product);
   const config = getQuantityInputConfig(product);
   const [quantityInput, setQuantityInput] = useState(unitProduct ? '1' : '100');
@@ -153,6 +158,14 @@ export default function ProductCard({ product, onAdd = () => {} }) {
                 {stockLabel}
               </p>
             )}
+            {!visible && (
+              <p className="truncate text-xs font-semibold text-amber-700">
+                Produit masque
+              </p>
+            )}
+            <p className="text-xs font-medium text-secondary-500">
+              Produit {noteMoyenneProduit.toFixed(1)}/5 ({nombreAvisProduit}) - Producteur {noteMoyenneProducteur.toFixed(1)}/5 ({nombreAvisProducteur})
+            </p>
             <QuantityStepper
               label={unitProduct ? 'Quantite en unites' : 'Quantite en poids'}
               min={quantityUnit === 'kg' ? 1 : config.min}
@@ -167,6 +180,14 @@ export default function ProductCard({ product, onAdd = () => {} }) {
             />
           </div>
           <div className="flex items-center gap-2">
+            <ActionButton
+              variant="secondary"
+              className="h-10 w-10 rounded-full p-0"
+              aria-label="Voir et noter"
+              onClick={() => onOpenReviews(product)}
+            >
+              <span className="material-symbols-rounded text-xl">reviews</span>
+            </ActionButton>
             <ActionButton
               variant="primary"
               className="h-10 w-10 rounded-full p-0 shadow-lg"

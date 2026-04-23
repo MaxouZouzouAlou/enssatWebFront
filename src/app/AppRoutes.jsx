@@ -5,23 +5,25 @@ import SiteFooter from '../components/SiteFooter.jsx';
 import useAuthProfile from '../features/auth/useAuthProfile';
 import useCart from '../hooks/useCart';
 import AccountPage from '../pages/AccountPage.jsx';
+import AchatPage from '../pages/AchatPage.jsx';
 import IncidentTicketsPage from '../pages/IncidentTicketsPage.jsx';
 import HomePage from '../pages/HomePage.jsx';
 import LoginPage from '../pages/LoginPage.jsx';
+import LoyaltyPage from '../pages/LoyaltyPage.jsx';
 import PanierPage from '../pages/PanierPage.jsx';
 import ProfessionalDashboardPage from '../pages/ProfessionalDashboardPage.jsx';
 import ProductsPage from '../pages/ProductsPage.jsx';
 import RegisterPage from '../pages/RegisterPage.jsx';
 import { authClient } from '../services/auth-client';
 
-const protectedPaths = new Set(['/compte', '/dashboard-producteur', '/espace-pro', '/tickets-incidents']);
+const protectedPaths = new Set(['/compte', '/fidelite', '/dashboard-producteur', '/espace-pro', '/tickets-incidents']);
 
 export function getLogoutRedirectPath(pathname) {
 	return protectedPaths.has(pathname) ? '/' : null;
 }
 
-function MarketplaceLayout({ addToCart, cartError, cartItems, clearCartError, removeFromCart, updateQuantity }) {
-	return <Outlet context={{ addToCart, cartError, cartItems, clearCartError, removeFromCart, updateQuantity }} />;
+function MarketplaceLayout({ addToCart, cartError, cartItems, clearCartError, removeFromCart, updateQuantity, profile, isAuthenticated, accountType }) {
+	return <Outlet context={{ addToCart, cartError, cartItems, clearCartError, removeFromCart, updateQuantity, profile, isAuthenticated, accountType }} />;
 }
 
 function AuthLayout() {
@@ -125,6 +127,7 @@ export default function AppRoutes() {
 					element={requireProfessional(<ProfessionalDashboardPage accountType={accountType} professionalId={professionalId} />)}
 				/>
 				<Route path="/tickets-incidents" element={requireAuth(<IncidentTicketsPage />)} />
+				<Route path="/fidelite" element={requireAuth(<LoyaltyPage />)} />
 				<Route element={
 					<MarketplaceLayout
 						addToCart={addToCart}
@@ -133,9 +136,12 @@ export default function AppRoutes() {
 						clearCartError={clearCartError}
 						removeFromCart={removeFromCart}
 						updateQuantity={updateQuantity}
+						profile={profile}
+						isAuthenticated={isAuthenticated}
+						accountType={accountType}
 					/>
 				}>
-					<Route path="/achat" element={<Navigate to="/produits" replace />} />
+					<Route path="/achat" element={<AchatPage />} />
 					<Route path="/produits" element={<ProductsPage />} />
 					<Route path="/panier" element={<PanierPage />} />
 				</Route>
