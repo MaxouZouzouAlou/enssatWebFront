@@ -20,7 +20,11 @@ import MetricCard from '../../components/layout/MetricCard.jsx';
 import PageShell from '../../components/layout/PageShell.jsx';
 import SectionHeader from '../../components/layout/SectionHeader.jsx';
 import SurfaceCard from '../../components/layout/SurfaceCard.jsx';
-import { fetchProfessionalDashboard } from '../../services/dashboard-client';
+import {
+	downloadOrderInvoice,
+	downloadProfessionalSalesReport,
+	fetchProfessionalDashboard,
+} from '../../services/dashboard-client';
 import { getProductsForProfessional, createProductForProfessional, updateProductForProfessional, deleteProductForProfessional } from '../../services/professionalProducts';
 
 const euro = new Intl.NumberFormat('fr-FR', { currency: 'EUR', style: 'currency' });
@@ -55,6 +59,7 @@ export default function ProfessionalDashboard({
 	const [dashboard, setDashboard] = useState(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState('');
+	const [documentMessage, setDocumentMessage] = useState('');
 
 // Professional products management: hooks must be declared before any conditional returns
 const [myProducts, setMyProducts] = useState([]);
@@ -134,6 +139,28 @@ useEffect(() => {
 		};
 	}, [isProfessional, professionalId]);
 
+	const downloadSalesReport = async () => {
+		if (!professionalId) return;
+		setDocumentMessage('');
+		try {
+			await downloadProfessionalSalesReport(professionalId, 90);
+			setDocumentMessage('Rapport des ventes telecharge.');
+		} catch (err) {
+			setDocumentMessage(err.message || 'Impossible de telecharger le rapport.');
+		}
+	};
+
+	const downloadInvoice = async (idCommande) => {
+		if (!professionalId) return;
+		setDocumentMessage('');
+		try {
+			await downloadOrderInvoice(professionalId, idCommande);
+			setDocumentMessage(`Facture PDF commande #${idCommande} telechargee.`);
+		} catch (err) {
+			setDocumentMessage(err.message || 'Impossible de telecharger cette facture.');
+		}
+	};
+
 	if (!isProfessional) {
 		return (
 			<RestrictedDashboardState
@@ -157,6 +184,7 @@ useEffect(() => {
 	const productSales = dashboard?.charts?.topProducts || [];
 	const channelSplit = dashboard?.charts?.channels || [];
 	const topCustomers = dashboard?.topCustomers || [];
+	const recentOrders = dashboard?.recentOrders || [];
 	const metricCards = [
 		['Chiffre d affaires (30j)', euro.format(metrics.revenue30d || 0), formatTrend(metrics.revenueTrendPct), 'text-primary-600'],
 		['Nombre de ventes', number.format(metrics.sales30d || 0), formatTrend(metrics.salesTrendPct), 'text-primary-600'],
@@ -170,6 +198,27 @@ useEffect(() => {
 	];
 
 
+	const downloadSalesReport = async () => {
+		if (!professionalId) return;
+		setDocumentMessage('');
+		try {
+			await downloadProfessionalSalesReport(professionalId, 90);
+			setDocumentMessage('Rapport des ventes telecharge.');
+		} catch (err) {
+			setDocumentMessage(err.message || 'Impossible de telecharger le rapport.');
+		}
+	};
+
+	const downloadInvoice = async (idCommande) => {
+		if (!professionalId) return;
+		setDocumentMessage('');
+		try {
+			await downloadOrderInvoice(professionalId, idCommande);
+			setDocumentMessage(`Facture PDF commande #${idCommande} telechargee.`);
+		} catch (err) {
+			setDocumentMessage(err.message || 'Impossible de telecharger cette facture.');
+		}
+	};
 
 	return (
 		<PageShell contentClassName="grid grid-cols-12 gap-5">
@@ -186,19 +235,19 @@ useEffect(() => {
 					) : null}
 					{loading ? <p className="mt-2 text-sm text-neutral-600">Chargement du dashboard...</p> : null}
 					{error ? <p className="mt-2 text-sm font-semibold text-red-700">{error}</p> : null}
+					{documentMessage ? <p className="mt-2 text-sm font-semibold text-primary-700">{documentMessage}</p> : null}
 				</SectionHeader>
-				<div className="flex w-full max-w-md flex-col gap-3 md:w-auto">
-					<ProfessionalCompanySwitcher
-						companies={professionalCompanies}
-						onSelectCompany={onSelectCompany}
-						selectedCompanyId={selectedCompany?.id}
-						title="Entreprise suivie"
-					/>
-					<ActionButton className="h-12 px-5" type="button">
-						Exporter le rapport
-					</ActionButton>
-				</div>
-			</header>
+			<div className="flex w-full max-w-md flex-col gap-3 md:w-auto">
+				<ProfessionalCompanySwitcher
+					companies={professionalCompanies}
+					onSelectCompany={onSelectCompany}
+					selectedCompanyId={selectedCompany?.id}
+					title="Entreprise suivie"
+				/>
+				<ActionButton className="h-12 px-5" onClick={downloadSalesReport} type="button">
+					Telecharger rapport ventes (CSV)
+				</ActionButton>
+			</div>
 
 			<section className="col-span-12 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
 				{metricCards.map(([label, value, trend, trendClassName]) => (
@@ -431,6 +480,32 @@ useEffect(() => {
 									</div>
 								</form>
 							</div>
+				<SurfaceCard className="col-span-12 p-4">
+					<div className="mb-3 flex items-end justify-between gap-3">
+						<h2 className="text-2xl font-bold">Documents de commande</h2>
+						<p className="text-sm text-neutral-600">Factures telechargeables</p>
+					</div>
+					{recentOrders.length === 0 ? (
+						<p className="text-sm text-neutral-600">Aucune commande recente pour generer des factures.</p>
+					) : (
+						<div className="space-y-2">
+							{recentOrders.map((order) => (
+								<div
+									className="flex flex-col gap-2 rounded-xl border border-neutral-200 p-3 md:flex-row md:items-center md:justify-between"
+									key={order.idCommande}
+								>
+									<div>
+										<p className="font-semibold text-secondary-900">Commande #{order.idCommande}</p>
+										<p className="text-sm text-neutral-600">
+											{new Date(order.dateCommande).toLocaleDateString('fr-FR')} • {order.modeLivraison || 'non renseigne'} • {order.status}
+										</p>
+										<p className="text-sm text-neutral-700">Total vendeur: {euro.format(order.total || 0)}</p>
+									</div>
+									<ActionButton className="h-10" onClick={() => downloadInvoice(order.idCommande)} type="button">
+										Telecharger facture
+									</ActionButton>
+								</div>
+							))}
 						</div>
 					)}
 				</SurfaceCard>
