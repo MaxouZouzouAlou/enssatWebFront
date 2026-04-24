@@ -1,70 +1,52 @@
-import { API_BASE_URL } from './auth-client';
-
-async function readJsonResponse(response, fallbackMessage) {
-	const data = await response.json().catch(() => ({}));
-	if (!response.ok) {
-		throw new Error(data.error || fallbackMessage);
-	}
-	return data;
-}
+import { requestJson } from './http-client.js';
 
 export async function fetchIncidents() {
-	const response = await fetch(`${API_BASE_URL}/incidents`, {
-		credentials: 'include',
+	return requestJson('/incidents', {
 		headers: {
 			Accept: 'application/json'
-		}
+		},
+		defaultMessage: 'Impossible de charger les incidents.'
 	});
-
-	return readJsonResponse(response, 'Impossible de charger les incidents.');
 }
 
 export async function fetchIncident(ticketId) {
-	const response = await fetch(`${API_BASE_URL}/incidents/${ticketId}`, {
-		credentials: 'include',
+	return requestJson(`/incidents/${ticketId}`, {
 		headers: {
 			Accept: 'application/json'
-		}
+		},
+		defaultMessage: 'Impossible de charger le ticket.'
 	});
-
-	return readJsonResponse(response, 'Impossible de charger le ticket.');
 }
 
 export async function createIncident(payload) {
-	const response = await fetch(`${API_BASE_URL}/incidents`, {
+	return requestJson('/incidents', {
 		method: 'POST',
-		credentials: 'include',
 		headers: {
 			'Content-Type': 'application/json'
 		},
-		body: JSON.stringify(payload)
+		body: JSON.stringify(payload),
+		defaultMessage: 'Creation du ticket impossible pour le moment.'
 	});
-
-	return readJsonResponse(response, 'Creation du ticket impossible pour le moment.');
 }
 
 export async function replyToIncident(ticketId, message) {
-	const response = await fetch(`${API_BASE_URL}/incidents/${ticketId}/reponses`, {
+	return requestJson(`/incidents/${ticketId}/reponses`, {
 		method: 'POST',
-		credentials: 'include',
 		headers: {
 			'Content-Type': 'application/json'
 		},
-		body: JSON.stringify({ message })
+		body: JSON.stringify({ message }),
+		defaultMessage: 'Reponse impossible pour le moment.'
 	});
-
-	return readJsonResponse(response, 'Reponse impossible pour le moment.');
 }
 
 export async function updateIncidentStatus(ticketId, status, commentaire = '') {
-	const response = await fetch(`${API_BASE_URL}/incidents/${ticketId}/status`, {
+	return requestJson(`/incidents/${ticketId}/status`, {
 		method: 'PATCH',
-		credentials: 'include',
 		headers: {
 			'Content-Type': 'application/json'
 		},
-		body: JSON.stringify({ status, commentaire })
+		body: JSON.stringify({ status, commentaire }),
+		defaultMessage: 'Mise a jour du statut impossible pour le moment.'
 	});
-
-	return readJsonResponse(response, 'Mise a jour du statut impossible pour le moment.');
 }

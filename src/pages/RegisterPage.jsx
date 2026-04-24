@@ -1,6 +1,6 @@
 import { useSearchParams } from 'react-router';
 import AuthShell from '../features/auth/AuthShell.jsx';
-import RegisterForm from '../features/auth/RegisterForm.jsx';
+import RegisterForm from '../features/auth/RegisterForm/RegisterForm.jsx';
 
 export default function RegisterPage({ onSwitchToLogin }) {
 	const [searchParams] = useSearchParams();

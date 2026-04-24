@@ -1,4 +1,5 @@
-import { API_BASE_URL } from './auth-client.js';
+import { API_BASE_URL } from './api-config.js';
+import { request, requestOptionalJson } from './http-client.js';
 
 function withCompanyScope(url, idEntreprise) {
     if (idEntreprise == null) return url;
@@ -8,22 +9,12 @@ function withCompanyScope(url, idEntreprise) {
 }
 
 export async function getProductsForProfessional(idProfessionnel, idEntreprise = null) {
-    const res = await fetch(withCompanyScope(`${API_BASE_URL}/products/professionnel/${idProfessionnel}`, idEntreprise), {
+    return requestOptionalJson(withCompanyScope(`${API_BASE_URL}/products/professionnel/${idProfessionnel}`, idEntreprise), {
         method: 'GET',
-        credentials: 'include',
+        fallbackMessage: 'Failed to fetch products for professional',
+        onParseFailure: 'throw',
+        invalidJsonMessage: 'Invalid JSON response from server when fetching products'
     });
-    if (!res.ok) {
-        const text = await res.text().catch(() => '');
-        const msg = text && text.includes('Cannot GET') ? text.replace(/\s+/g, ' ').trim() : `${res.status} ${res.statusText}`;
-        throw new Error(msg || 'Failed to fetch products for professional');
-    }
-
-    const text = await res.text().catch(() => '');
-    if (!text) return null;
-    try { return JSON.parse(text); } catch {
-        // response body not JSON -- return raw text as error
-        throw new Error('Invalid JSON response from server when fetching products');
-    }
 }
 
 export async function createProductForProfessional(idProfessionnel, product, idEntreprise = null) {
@@ -45,15 +36,13 @@ export async function createProductForProfessional(idProfessionnel, product, idE
         if (scopedCompanyId != null) fd.append('idEntreprise', String(scopedCompanyId));
         fd.append('image', product.image);
 
-        res = await fetch(url, {
+        res = await request(url, {
             method: 'POST',
-            credentials: 'include',
             body: fd,
         });
     } else {
-        res = await fetch(url, {
+        res = await request(url, {
             method: 'POST',
-            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 ...product,
@@ -92,9 +81,8 @@ export async function updateProductForProfessional(idProfessionnel, idProduit, p
         if (scopedCompanyId != null) fd.append('idEntreprise', String(scopedCompanyId));
         fd.append('image', product.image);
 
-        res = await fetch(url, {
+        res = await request(url, {
             method: 'PUT',
-            credentials: 'include',
             body: fd,
         });
     } else {
@@ -102,9 +90,8 @@ export async function updateProductForProfessional(idProfessionnel, idProduit, p
         const payload = { ...product };
         if (payload.visible != null) payload.visible = payload.visible ? 1 : 0;
         if (scopedCompanyId != null) payload.idEntreprise = scopedCompanyId;
-        res = await fetch(url, {
+        res = await request(url, {
             method: 'PUT',
-            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
         });
@@ -123,10 +110,7 @@ export async function updateProductForProfessional(idProfessionnel, idProduit, p
 
 export async function deleteProductForProfessional(idProfessionnel, idProduit, idEntreprise = null) {
     const url = withCompanyScope(`${API_BASE_URL}/products/professionnel/${idProfessionnel}/${idProduit}`, idEntreprise);
-    const res = await fetch(url, {
-        method: 'DELETE',
-        credentials: 'include'
-    });
+    const res = await request(url, { method: 'DELETE' });
     if (!res.ok) {
         const text = await res.text().catch(() => '');
         const msg = text && text.includes('Cannot') ? text.replace(/\s+/g, ' ').trim() : `${res.status} ${res.statusText}`;

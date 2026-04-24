@@ -51,8 +51,7 @@ function QuantityControl({ item, onRemove, onUpdate, compact = false }) {
 
     try {
       await onUpdate(id, nextQuantity);
-    } catch (err) {
-      console.error('Failed to update product quantity', err);
+    } catch {
       setLocalQty(quantityToDisplayValue(product, item.quantity));
       setDisplayUnit(getDisplayUnit(product, item.quantity));
     }
@@ -100,7 +99,7 @@ function QuantityControl({ item, onRemove, onUpdate, compact = false }) {
       <button
         type="button"
         onClick={async () => {
-          try { await onRemove(id); } catch (err) { console.error('Failed to remove product from shopping cart', err); }
+          try { await onRemove(id); } catch {}
         }}
         className="grid h-8 w-8 place-items-center rounded-lg text-red-600 transition hover:bg-red-50"
         aria-label="Supprimer le produit du panier"

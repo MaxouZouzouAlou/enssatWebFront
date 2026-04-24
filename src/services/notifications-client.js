@@ -1,36 +1,26 @@
-import { API_BASE_URL } from './auth-client.js';
-
-async function parseResponse(response, defaultMessage) {
-	const data = await response.json().catch(() => ({}));
-	if (!response.ok) throw new Error(data.error || defaultMessage);
-	return data;
-}
+import { requestJson } from './http-client.js';
 
 export async function fetchNotifications() {
-	const response = await fetch(`${API_BASE_URL}/notifications`, { credentials: 'include' });
-	return parseResponse(response, 'Impossible de charger les notifications.');
+	return requestJson('/notifications', { defaultMessage: 'Impossible de charger les notifications.' });
 }
 
 export async function markNotificationRead(id) {
-	const response = await fetch(`${API_BASE_URL}/notifications/${id}/read`, {
+	return requestJson(`/notifications/${id}/read`, {
 		method: 'PATCH',
-		credentials: 'include',
+		defaultMessage: 'Impossible de marquer la notification comme lue.'
 	});
-	return parseResponse(response, 'Impossible de marquer la notification comme lue.');
 }
 
 export async function markAllNotificationsRead() {
-	const response = await fetch(`${API_BASE_URL}/notifications/read-all`, {
+	return requestJson('/notifications/read-all', {
 		method: 'PATCH',
-		credentials: 'include',
+		defaultMessage: 'Impossible de marquer les notifications comme lues.'
 	});
-	return parseResponse(response, 'Impossible de marquer les notifications comme lues.');
 }
 
 export async function deleteNotification(id) {
-	const response = await fetch(`${API_BASE_URL}/notifications/${id}`, {
+	return requestJson(`/notifications/${id}`, {
 		method: 'DELETE',
-		credentials: 'include',
+		defaultMessage: 'Impossible de supprimer la notification.'
 	});
-	return parseResponse(response, 'Impossible de supprimer la notification.');
 }

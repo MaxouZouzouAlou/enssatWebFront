@@ -1,5 +1,5 @@
 import AuthShell from '../features/auth/AuthShell.jsx';
-import LoginForm from '../features/auth/LoginForm.jsx';
+import LoginForm from '../features/auth/LoginForm/LoginForm.jsx';
 
 export default function LoginPage({ onAuthenticated, onSwitchToRegister }) {
 	return (

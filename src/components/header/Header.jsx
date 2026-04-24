@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router';
 import { ReactComponent as Logo } from '../../assets/logo.svg';
 import { PrimaryButton } from '../Button.jsx';
 import IconButton from '../IconButton.jsx';
-import AccountMenu from './AccountMenu.jsx';
+import AccountMenu from './AccountMenu/AccountMenu.jsx';
 import CartPreview from './CartPreview.jsx';
 import HeaderPopover from './HeaderPopover.jsx';
 import NavTabs from './NavTabs.jsx';
