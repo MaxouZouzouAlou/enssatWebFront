@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, useNavigate, useOutletContext } from 'react-router';
 import { ActionButton } from '../components/Button.jsx';
 import useCheckoutDraft from '../features/checkout/useCheckoutDraft/useCheckoutDraft.js';
