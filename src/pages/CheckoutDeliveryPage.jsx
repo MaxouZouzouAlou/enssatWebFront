@@ -10,7 +10,7 @@ import PickupRouteMap from '../features/pickup-route/PickupRouteMap.jsx';
 import PageShell from '../components/layout/PageShell.jsx';
 import SectionHeader from '../components/layout/SectionHeader.jsx';
 import SurfaceCard from '../components/layout/SurfaceCard.jsx';
-import { fetchCheckoutContext, previewCheckout } from '../services/orders-client.js';
+import { fetchCheckoutContext, getCachedCheckoutContext, previewCheckout } from '../services/orders-client.js';
 
 function formatAddress(address) {
 	if (!address) return '';
@@ -29,8 +29,8 @@ export default function CheckoutDeliveryPage() {
 	const navigate = useNavigate();
 	const { cartItems } = useOutletContext();
 	const initialDraft = useMemo(() => loadCheckoutDraft(), []);
-	const [context, setContext] = useState(null);
-	const [loading, setLoading] = useState(true);
+	const [context, setContext] = useState(() => getCachedCheckoutContext());
+	const [loading, setLoading] = useState(() => !getCachedCheckoutContext());
 	const [error, setError] = useState('');
 	const [preview, setPreview] = useState(null);
 	const [previewError, setPreviewError] = useState('');
@@ -45,6 +45,10 @@ export default function CheckoutDeliveryPage() {
 	const selectedPickupStops = useMemo(
 		() => preview?.pickupRoute?.stops || [],
 		[preview]
+	);
+	const selectedDeliveryFee = useMemo(
+		() => Number(context?.deliveryModes?.find((option) => option.value === modeLivraison)?.frais || 0),
+		[context?.deliveryModes, modeLivraison]
 	);
 	const pickupOptimizationReady = Boolean(context?.pickup?.originGeocoded);
 
@@ -165,7 +169,7 @@ export default function CheckoutDeliveryPage() {
 						activeStep="livraison"
 						title="Étape 1 · Livraison"
 						description="Choisissez le mode de livraison global, puis complétez la sélection demandée."
-						aside={<CheckoutSummaryCard preview={preview} cartItems={cartItems} />}
+						aside={<CheckoutSummaryCard preview={preview} cartItems={cartItems} fallbackDeliveryFees={selectedDeliveryFee} />}
 					>
 						<SurfaceCard className="p-5 sm:p-6">
 							<div className="grid gap-3">

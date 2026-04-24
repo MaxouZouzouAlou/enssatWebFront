@@ -11,11 +11,12 @@ function estimateLineTotal(item) {
 
 export default function CheckoutSummaryCard({
 	preview,
-	cartItems = []
+	cartItems = [],
+	fallbackDeliveryFees = 0
 }) {
 	const fallbackSubtotal = cartItems.reduce((sum, item) => sum + estimateLineTotal(item), 0);
 	const subtotal = Number(preview?.sousTotalProduits ?? fallbackSubtotal);
-	const deliveryFees = Number(preview?.fraisLivraison ?? 0);
+	const deliveryFees = Number(preview?.fraisLivraison ?? fallbackDeliveryFees);
 	const voucherDiscount = Number(preview?.appliedVoucher?.valeurEuros ?? 0);
 	const total = Number(preview?.prixTotal ?? (subtotal + deliveryFees));
 

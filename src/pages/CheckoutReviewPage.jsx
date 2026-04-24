@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Navigate, useNavigate, useOutletContext } from 'react-router';
 import { ActionButton } from '../components/Button.jsx';
 import CheckoutStepShell from '../features/checkout/CheckoutStepShell.jsx';
@@ -9,6 +10,7 @@ import SectionHeader from '../components/layout/SectionHeader.jsx';
 import SurfaceCard from '../components/layout/SurfaceCard.jsx';
 import { checkoutCurrentCart, previewCheckout } from '../services/orders-client.js';
 import { useToast } from '../app/ToastProvider.jsx';
+import { queryKeys } from '../utils/queryKeys.js';
 
 function formatAddress(address) {
 	if (!address) return '';
@@ -17,6 +19,7 @@ function formatAddress(address) {
 
 export default function CheckoutReviewPage() {
 	const navigate = useNavigate();
+	const queryClient = useQueryClient();
 	const toast = useToast();
 	const { cartItems, updateQuantity } = useOutletContext();
 	const draft = useMemo(() => loadCheckoutDraft(), []);
@@ -80,6 +83,7 @@ export default function CheckoutReviewPage() {
 			await Promise.all(
 				cartItems.map((item) => updateQuantity(item.product.idProduit ?? item.product.id, 0, { notify: false }))
 			);
+			await queryClient.invalidateQueries({ queryKey: queryKeys.notifications.list });
 			clearCheckoutDraft();
 			toast.showSuccess(`Commande #${result.order.idCommande} validee.`);
 			navigate(`/commandes/${result.order.idCommande}`, { replace: true });

@@ -4,6 +4,44 @@ import shoppingCartService from '../services/shoppingCart';
 import { queryKeys } from '../utils/queryKeys.js';
 
 const EMPTY_CART = [];
+const GUEST_CART_STORAGE_KEY = 'localzh-guest-cart';
+
+function readGuestCartStorage(fallback = EMPTY_CART) {
+	if (typeof window === 'undefined') return fallback;
+
+	try {
+		const raw = window.localStorage.getItem(GUEST_CART_STORAGE_KEY);
+		if (!raw) return fallback;
+		const parsed = JSON.parse(raw);
+		return Array.isArray(parsed) ? parsed : fallback;
+	} catch {
+		return fallback;
+	}
+}
+
+function writeGuestCartStorage(items) {
+	if (typeof window === 'undefined') return;
+
+	try {
+		if (!items?.length) {
+			window.localStorage.removeItem(GUEST_CART_STORAGE_KEY);
+			return;
+		}
+		window.localStorage.setItem(GUEST_CART_STORAGE_KEY, JSON.stringify(items));
+	} catch {
+		// Ignore storage quota or serialization failures.
+	}
+}
+
+function clearGuestCartStorage() {
+	if (typeof window === 'undefined') return;
+
+	try {
+		window.localStorage.removeItem(GUEST_CART_STORAGE_KEY);
+	} catch {
+		// Ignore storage failures.
+	}
+}
 
 function getProductId(product) {
 	return product?.idProduit ?? product?.id ?? product?._id ?? null;
@@ -30,16 +68,16 @@ function mapCartItem(item) {
 }
 
 export default function useCart(profile = null, initial = EMPTY_CART, notifications = {}) {
-	const initialCartRef = useRef(initial);
-	const [guestCartItems, setGuestCartItems] = useState(initial);
+	const initialGuestCart = useMemo(() => readGuestCartStorage(initial), [initial]);
+	const [guestCartItems, setGuestCartItems] = useState(initialGuestCart);
 	const [cartOpen, setCartOpen] = useState(false);
 	const [cartError, setCartError] = useState(null);
 	const isServerCart = Boolean(profile);
 	const queryClient = useQueryClient();
 
 	// Tracks local items while not logged in so the login effect can read them
-	const localItemsRef = useRef(initial);
-	const prevProfileRef = useRef(profile);
+	const localItemsRef = useRef(initialGuestCart);
+	const prevProfileRef = useRef(null);
 	const {
 		showError = () => {},
 		showSuccess = () => {}
@@ -86,7 +124,9 @@ export default function useCart(profile = null, initial = EMPTY_CART, notificati
 		}
 
 		const isLoginTransition = !prevProfileRef.current;
-		const pendingLocalItems = isLoginTransition ? [...localItemsRef.current] : [];
+		const pendingLocalItems = isLoginTransition
+			? readGuestCartStorage(localItemsRef.current)
+			: [];
 		prevProfileRef.current = profile;
 
 		for (const item of pendingLocalItems) {
@@ -97,6 +137,12 @@ export default function useCart(profile = null, initial = EMPTY_CART, notificati
 			} catch {
 				// Silent: stock issues, deleted products, etc.
 			}
+		}
+
+		if (pendingLocalItems.length) {
+			clearGuestCartStorage();
+			localItemsRef.current = [];
+			setGuestCartItems([]);
 		}
 
 		const data = await shoppingCartService.getCurrentShoppingCartItems();
@@ -256,12 +302,12 @@ export default function useCart(profile = null, initial = EMPTY_CART, notificati
 	useEffect(() => {
 		if (!profile) {
 			localItemsRef.current = guestCartItems;
+			writeGuestCartStorage(guestCartItems);
 		}
 	}, [profile, guestCartItems]);
 
 	useEffect(() => {
 		if (!profile) {
-			setGuestCartItems(initialCartRef.current);
 			prevProfileRef.current = null;
 			queryClient.removeQueries({ queryKey: queryKeys.cart.current });
 		}

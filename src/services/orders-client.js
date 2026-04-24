@@ -1,5 +1,12 @@
 import { API_BASE_URL } from './auth-client.js';
 
+const CHECKOUT_CONTEXT_TTL_MS = 30_000;
+let checkoutContextCache = {
+	data: null,
+	promise: null,
+	expiresAt: 0
+};
+
 async function parseResponse(response, defaultMessage) {
 	const data = await response.json().catch(() => ({}));
 	if (!response.ok) {
@@ -9,11 +16,52 @@ async function parseResponse(response, defaultMessage) {
 }
 
 export async function fetchCheckoutContext() {
-	const response = await fetch(`${API_BASE_URL}/orders/checkout/context`, {
-		credentials: 'include'
-	});
+	if (checkoutContextCache.data && checkoutContextCache.expiresAt > Date.now()) {
+		return checkoutContextCache.data;
+	}
 
-	return parseResponse(response, 'Impossible de charger le contexte de commande.');
+	if (checkoutContextCache.promise) {
+		return checkoutContextCache.promise;
+	}
+
+	checkoutContextCache.promise = fetch(`${API_BASE_URL}/orders/checkout/context`, {
+		credentials: 'include'
+	})
+		.then((response) => parseResponse(response, 'Impossible de charger le contexte de commande.'))
+		.then((data) => {
+			checkoutContextCache = {
+				data,
+				promise: null,
+				expiresAt: Date.now() + CHECKOUT_CONTEXT_TTL_MS
+			};
+			return data;
+		})
+		.catch((error) => {
+			checkoutContextCache = {
+				data: null,
+				promise: null,
+				expiresAt: 0
+			};
+			throw error;
+		});
+
+	return checkoutContextCache.promise;
+}
+
+export function getCachedCheckoutContext() {
+	if (!checkoutContextCache.data || checkoutContextCache.expiresAt <= Date.now()) {
+		return null;
+	}
+
+	return checkoutContextCache.data;
+}
+
+export function clearCheckoutContextCache() {
+	checkoutContextCache = {
+		data: null,
+		promise: null,
+		expiresAt: 0
+	};
 }
 
 export async function previewCheckout(payload = {}) {

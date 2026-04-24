@@ -7,6 +7,7 @@ import PageShell from '../components/layout/PageShell.jsx';
 import SectionHeader from '../components/layout/SectionHeader.jsx';
 import SurfaceCard from '../components/layout/SurfaceCard.jsx';
 import { clearCheckoutDraft } from '../features/checkout/checkoutDraft.js';
+import { fetchCheckoutContext } from '../services/orders-client.js';
 
 function estimateLineTotal(item) {
 	const quantity = Number(item.quantity || 0);
@@ -38,6 +39,7 @@ export default function PanierPage() {
 			navigate('/login');
 			return;
 		}
+		void fetchCheckoutContext().catch(() => null);
 		navigate('/commande/livraison');
 	};
 

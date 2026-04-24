@@ -25,6 +25,7 @@ const initialCart = [{ product, quantity: 1 }];
 
 beforeEach(() => {
 	jest.clearAllMocks();
+	window.localStorage.clear();
 });
 
 function createWrapper() {
@@ -110,4 +111,37 @@ test('exposes a user-facing cart error when a backend update fails', async () =>
 	});
 
 	expect(result.current.cartError).toBeNull();
+});
+
+test('merges persisted guest cart into the server cart after an authenticated reload', async () => {
+	window.localStorage.setItem('localzh-guest-cart', JSON.stringify([{ product, quantity: 1.5 }]));
+	shoppingCartService.getCurrentShoppingCart.mockResolvedValue({ idPanier: 7 });
+	shoppingCartService.addProductToShoppingCart.mockResolvedValue({ idPanier: 7, idProduit: 2, quantite: 1.5 });
+	shoppingCartService.getCurrentShoppingCartItems.mockResolvedValue([
+		{
+			idProduit: 2,
+			nomProduit: 'Courgettes',
+			prix: 2,
+			unitaireOuKilo: false,
+			quantite: 1.5
+		}
+	]);
+
+	const { result } = renderHook(() => useCart(authenticatedProfile), { wrapper: createWrapper() });
+
+	await waitFor(() => expect(result.current.cartId).toBe(7));
+
+	expect(shoppingCartService.addProductToShoppingCart).toHaveBeenCalledWith(2, 1.5);
+	expect(result.current.cartItems).toHaveLength(1);
+	expect(result.current.cartItems[0]).toMatchObject({
+		product: {
+			idProduit: 2,
+			id: 2,
+			nom: 'Courgettes',
+			prix: 2,
+			unitaireOuKilo: false
+		},
+		quantity: 1.5
+	});
+	expect(window.localStorage.getItem('localzh-guest-cart')).toBeNull();
 });

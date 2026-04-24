@@ -8,13 +8,13 @@ import PageShell from '../components/layout/PageShell.jsx';
 import SectionHeader from '../components/layout/SectionHeader.jsx';
 import SurfaceCard from '../components/layout/SurfaceCard.jsx';
 import { fetchMyLoyalty } from '../services/loyalty-client.js';
-import { fetchCheckoutContext, previewCheckout } from '../services/orders-client.js';
+import { fetchCheckoutContext, getCachedCheckoutContext, previewCheckout } from '../services/orders-client.js';
 
 export default function CheckoutPaymentPage() {
 	const navigate = useNavigate();
 	const { accountType, cartItems } = useOutletContext();
 	const draft = useMemo(() => loadCheckoutDraft(), []);
-	const [context, setContext] = useState(null);
+	const [context, setContext] = useState(() => getCachedCheckoutContext());
 	const [loyalty, setLoyalty] = useState(null);
 	const [preview, setPreview] = useState(draft.preview || null);
 	const [paymentMode, setPaymentMode] = useState(draft.modePaiement || 'carte_bancaire');
