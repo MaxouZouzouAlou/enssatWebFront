@@ -158,16 +158,36 @@ export default function CheckoutDeliveryPage() {
 								) : null}
 
 								{modeLivraison === 'lieu_vente' ? (
-									<PickupAssignmentsPanel
-										pickupOptimizationReady={pickupOptimizationReady}
-										optimizedStopsCount={context?.pickup?.optimizedStopsCount}
-										items={context?.items || []}
-										pickupAssignments={pickupAssignments}
-										onAssignmentChange={setAssignment}
-										selectedPickupStops={selectedPickupStops}
-										totalDistanceKm={preview?.pickupRoute?.totalDistanceKm}
-										formatAddress={formatAddress}
-									/>
+									<div className="space-y-6">
+										<PickupAssignmentsPanel
+											pickupOptimizationReady={pickupOptimizationReady}
+											optimizedStopsCount={context?.pickup?.optimizedStopsCount}
+											items={context?.items || []}
+											pickupAssignments={pickupAssignments}
+											onAssignmentChange={setAssignment}
+											selectedPickupStops={selectedPickupStops}
+											totalDistanceKm={preview?.pickupRoute?.totalDistanceKm}
+											formatAddress={formatAddress}
+										/>
+
+										<div className="rounded-2xl border border-primary-100 bg-primary-50/30 p-4">
+											<p className="text-sm font-semibold text-primary-900">Itinéraire de retrait</p>
+											<p className="mt-1 text-xs leading-relaxed text-primary-700">
+												Par défaut, le trajet est calculé à partir de l'adresse de votre profil. 
+												Vous pouvez renseigner une autre adresse de départ ci-dessous pour ajuster le calcul de distance, 
+												mais ce n'est pas obligatoire pour valider la commande.
+											</p>
+											<div className="mt-4 opacity-80 focus-within:opacity-100 transition-opacity">
+												<DeliveryAddressForm
+													adresseLivraison={adresseLivraison}
+													onAddressLineChange={(nextValue) => setAdresseLivraison((current) => ({ ...current, adresse_ligne: nextValue }))}
+													onPostalCodeChange={updateAdresseLivraison('code_postal')}
+													onCityChange={updateAdresseLivraison('ville')}
+													onSuggestionSelect={selectAdresseLivraison}
+												/>
+											</div>
+										</div>
+									</div>
 								) : null}
 
 							{previewError ? <p className="mt-6 text-sm font-semibold text-red-700">{previewError}</p> : null}
