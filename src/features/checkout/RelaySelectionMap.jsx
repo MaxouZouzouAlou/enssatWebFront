@@ -1,5 +1,6 @@
 import L from 'leaflet';
-import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
+import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
+import { useEffect } from 'react';
 import 'leaflet/dist/leaflet.css';
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
@@ -16,6 +17,17 @@ function formatAddress(address) {
 	return [address.ligne, address.codePostal, address.ville].filter(Boolean).join(', ');
 }
 
+function MapViewportController({ center, zoom }) {
+	const map = useMap();
+
+	useEffect(() => {
+		if (!Array.isArray(center) || center.length !== 2) return;
+		map.setView(center, zoom);
+	}, [center, map, zoom]);
+
+	return null;
+}
+
 export default function RelaySelectionMap({ relay }) {
 	const latitude = Number(relay?.coordinates?.latitude);
 	const longitude = Number(relay?.coordinates?.longitude);
@@ -26,12 +38,12 @@ export default function RelaySelectionMap({ relay }) {
 		<div className="overflow-hidden rounded-2xl border border-neutral-200">
 			<div className="h-[260px] w-full">
 				<MapContainer
-					key={`${latitude}-${longitude}`}
 					center={[latitude, longitude]}
 					zoom={14}
 					scrollWheelZoom
 					className="h-full w-full"
 				>
+					<MapViewportController center={[latitude, longitude]} zoom={14} />
 					<TileLayer
 						attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 						url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
