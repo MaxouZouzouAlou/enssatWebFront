@@ -31,11 +31,11 @@ export default function PurchaseInvoicesPanel({ professionalId }) {
 		setMessage('');
 		try {
 			await downloadOrderInvoice(idCommande);
-			const text = `Facture PDF commande #${idCommande} telechargee.`;
+			const text = `Facture PDF commande #${idCommande} téléchargée.`;
 			setMessage(text);
 			toast.showSuccess(text);
 		} catch (err) {
-			const text = err.message || 'Impossible de telecharger cette facture.';
+			const text = err.message || 'Impossible de télécharger cette facture.';
 			setMessage(text);
 			toast.showError(text);
 		}
@@ -74,14 +74,14 @@ export default function PurchaseInvoicesPanel({ professionalId }) {
 								<p className="font-semibold text-secondary-900">Commande #{order.idCommande}</p>
 								<p className="text-sm text-secondary-600">
 									{new Date(order.dateCommande).toLocaleDateString('fr-FR')} •{' '}
-									{order.modeLivraison || 'non renseigne'} • {order.status}
+									{order.modeLivraison || 'non renseigné'} • {order.status}
 								</p>
 								<p className="mt-1 text-sm font-medium text-secondary-700">
 									Total commande: {euro.format(order.prixTotal || 0)}
 								</p>
 							</div>
 							<ActionButton className="h-10" onClick={() => downloadInvoice(order.idCommande)} type="button">
-								Telecharger facture
+								Télécharger facture
 							</ActionButton>
 						</div>
 					))}

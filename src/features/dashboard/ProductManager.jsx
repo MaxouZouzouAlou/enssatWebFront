@@ -102,9 +102,9 @@ export default function ProductManager({ professionalId, selectedCompanyId, sele
 		try {
 			await createProductMutation.mutateAsync(newProduct);
 			setNewProduct(EMPTY_NEW_PRODUCT);
-			toast.showSuccess('Produit ajoute au catalogue.');
+			toast.showSuccess('Produit ajouté au catalogue.');
 		} catch (err) {
-			const message = err.message || 'Erreur creation produit';
+			const message = err.message || 'Erreur création produit';
 			setProductError(message);
 			toast.showError(message);
 		}
@@ -119,7 +119,7 @@ export default function ProductManager({ professionalId, selectedCompanyId, sele
 			<DashboardPanelHeading
 				eyebrow="Catalogue"
 				title="Mes produits en vente"
-				description="Gerez vos produits et ajoutez-en de nouveaux"
+				description="Gérez vos produits et ajoutez-en de nouveaux"
 			/>
 			{loading ? (
 				<div className="text-sm text-secondary-600">Chargement des produits...</div>
@@ -246,7 +246,7 @@ export default function ProductManager({ professionalId, selectedCompanyId, sele
 														if (!window.confirm('Supprimer ce produit ?')) return;
 														try {
 															await deleteProductMutation.mutateAsync(p.idProduit || p.id);
-															toast.showSuccess('Produit supprime.');
+															toast.showSuccess('Produit supprimé.');
 														} catch (err) {
 															const message = err.message || 'Erreur suppression';
 															setProductError(message);
@@ -293,7 +293,7 @@ export default function ProductManager({ professionalId, selectedCompanyId, sele
 															</span>
 														) : (
 															<span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
-																Masque
+																Masqué
 															</span>
 														)}
 													</div>
@@ -313,7 +313,7 @@ export default function ProductManager({ professionalId, selectedCompanyId, sele
 														});
 													}}
 												>
-													Editer
+													Éditer
 												</button>
 											</div>
 										</div>
