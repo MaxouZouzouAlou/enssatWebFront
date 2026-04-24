@@ -12,9 +12,19 @@ import { checkoutCurrentCart, previewCheckout } from '../services/orders-client.
 import { useToast } from '../app/ToastProvider.jsx';
 import { queryKeys } from '../utils/queryKeys.js';
 
+const DELIVERY_LABELS = {
+	domicile: 'Livraison à domicile',
+	point_relais: 'Point relais',
+	lieu_vente: 'Retrait en point de vente'
+};
+
 function formatAddress(address) {
 	if (!address) return '';
 	return [address.ligne, address.codePostal, address.ville].filter(Boolean).join(', ');
+}
+
+export function formatDeliveryMode(mode) {
+	return DELIVERY_LABELS[mode] || mode || 'Mode de livraison non renseigné';
 }
 
 export default function CheckoutReviewPage() {
@@ -85,7 +95,7 @@ export default function CheckoutReviewPage() {
 			);
 			await queryClient.invalidateQueries({ queryKey: queryKeys.notifications.list });
 			clearCheckoutDraft();
-			toast.showSuccess(`Commande #${result.order.idCommande} validee.`);
+			toast.showSuccess(`Commande #${result.order.idCommande} validée.`);
 			navigate(`/commandes/${result.order.idCommande}`, { replace: true });
 		} catch (checkoutError) {
 			const message = checkoutError.message || 'Impossible de valider la commande.';
@@ -112,7 +122,7 @@ export default function CheckoutReviewPage() {
 					<SurfaceCard className="space-y-5 p-5 sm:p-6">
 						<div className="rounded-2xl border border-neutral-200 bg-[#fcfaf5] p-4">
 							<p className="text-sm font-semibold uppercase tracking-[0.1em] text-primary-700">Livraison</p>
-							<p className="mt-2 text-base font-semibold text-secondary-900">{preview?.modeLivraison || draft.modeLivraison}</p>
+							<p className="mt-2 text-base font-semibold text-secondary-900">{formatDeliveryMode(preview?.modeLivraison || draft.modeLivraison)}</p>
 							{preview?.delivery?.address ? (
 								<p className="mt-1 text-sm text-secondary-600">{preview.delivery.address.label || formatAddress(preview.delivery.address)}</p>
 							) : null}

@@ -38,7 +38,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:49161';
 function formatTrend(value) {
 	const trend = Number(value || 0);
 	const prefix = trend > 0 ? '+' : '';
-	return `${prefix}${trend.toFixed(1)}% vs periode precedente`;
+	return `${prefix}${trend.toFixed(1)}% vs période précédente`;
 }
 
 function resolveProductImageUrl(imageValue) {
@@ -61,7 +61,7 @@ function RestrictedDashboardState({ title, message }) {
 	return (
 		<PageShell contentClassName="max-w-2xl">
 			<SurfaceCard className="p-6">
-				<p className="text-xs font-bold uppercase tracking-[0.12em] text-primary-600">Acces restreint</p>
+				<p className="text-xs font-bold uppercase tracking-[0.12em] text-primary-600">Accès restreint</p>
 				<h1 className="mt-2 text-3xl font-bold">{title}</h1>
 				<p className="mt-3 leading-7 text-neutral-600">{message}</p>
 			</SurfaceCard>
@@ -126,9 +126,9 @@ const submitNewProduct = async (e) => {
 	try {
 		await createProductMutation.mutateAsync(newProduct);
 		setNewProduct({ nomProduit: '', prix: '', unitaireOuKilo: 1, stock: 0, nature: 'Autre', bio: false, tva: 0, reductionPro: 0, image: null });
-		toast.showSuccess('Produit ajoute au catalogue.');
+			toast.showSuccess('Produit ajouté au catalogue.');
 	} catch (err) {
-		const message = err.message || 'Erreur creation produit';
+			const message = err.message || 'Erreur création produit';
 		setProductError(message);
 		toast.showError(message);
 	}
@@ -175,10 +175,10 @@ const submitNewProduct = async (e) => {
 		setDocumentMessage('');
 		try {
 			await downloadProfessionalSalesReport(professionalId, 90, selectedCompanyId);
-			setDocumentMessage('Rapport des ventes telecharge.');
-			toast.showSuccess('Rapport des ventes telecharge.');
+			setDocumentMessage('Rapport des ventes téléchargé.');
+			toast.showSuccess('Rapport des ventes téléchargé.');
 		} catch (err) {
-			const message = err.message || 'Impossible de telecharger le rapport.';
+			const message = err.message || 'Impossible de télécharger le rapport.';
 			setDocumentMessage(message);
 			toast.showError(message);
 		}
@@ -189,10 +189,10 @@ const submitNewProduct = async (e) => {
 		setDocumentMessage('');
 		try {
 			await downloadOrderInvoice(idCommande);
-			setDocumentMessage(`Facture PDF commande #${idCommande} telechargee.`);
-			toast.showSuccess(`Facture PDF commande #${idCommande} telechargee.`);
+			setDocumentMessage(`Facture PDF commande #${idCommande} téléchargée.`);
+			toast.showSuccess(`Facture PDF commande #${idCommande} téléchargée.`);
 		} catch (err) {
-			const message = err.message || 'Impossible de telecharger cette facture.';
+			const message = err.message || 'Impossible de télécharger cette facture.';
 			setDocumentMessage(message);
 			toast.showError(message);
 		}
@@ -202,7 +202,7 @@ const submitNewProduct = async (e) => {
 		return (
 			<RestrictedDashboardState
 				title="Espace pro indisponible"
-				message="Cette page est reservee aux comptes professionnels verifies. Connectez-vous avec un compte pro pour acceder a vos statistiques de vente."
+				message="Cette page est réservée aux comptes professionnels vérifiés. Connectez-vous avec un compte pro pour accéder à vos statistiques de vente."
 			/>
 		);
 	}
@@ -211,7 +211,7 @@ const submitNewProduct = async (e) => {
 		return (
 			<RestrictedDashboardState
 				title="Espace pro indisponible"
-				message="Le profil professionnel n est pas encore disponible pour cette session."
+				message="Le profil professionnel n'est pas encore disponible pour cette session."
 			/>
 		);
 	}
@@ -244,12 +244,12 @@ const submitNewProduct = async (e) => {
 		["Chiffre d'affaires (30j)", euro.format(metrics.revenue30d || 0), formatTrend(metrics.revenueTrendPct), 'text-primary-600'],
 		['Nombre de ventes', number.format(metrics.sales30d || 0), formatTrend(metrics.salesTrendPct), 'text-primary-600'],
 		['Panier moyen', euro.format(metrics.averageBasket30d || 0), `${number.format(metrics.orders30d || 0)} commande(s)`, 'text-primary-600'],
-		['Taux de rupture', `${Number(metrics.outOfStockRatePct || 0).toFixed(1)}%`, `${number.format(metrics.outOfStockProducts || 0)} produit(s) a surveiller`, 'text-tertiary-500'],
+		['Taux de rupture', `${Number(metrics.outOfStockRatePct || 0).toFixed(1)}%`, `${number.format(metrics.outOfStockProducts || 0)} produit(s) à surveiller`, 'text-tertiary-500'],
 	];
 	const customerColumns = [
 		{ key: 'customer', header: 'Client' },
 		{ key: 'orders', header: 'Commandes' },
-		{ key: 'revenue', header: 'CA genere', render: (row) => euro.format(row.revenue) },
+		{ key: 'revenue', header: 'CA généré', render: (row) => euro.format(row.revenue) },
 	];
 
 	return (
@@ -264,14 +264,14 @@ const submitNewProduct = async (e) => {
 					{selectedCompany ? (
 						<div className="mt-4 grid gap-3 rounded-[1.5rem] border border-white/70 bg-white/80 p-4 shadow-[0_12px_30px_rgba(34,51,35,.08)] backdrop-blur sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
 							<div>
-								<p className="text-[11px] font-black uppercase tracking-[0.18em] text-secondary-500">Entreprise affichee</p>
+								<p className="text-[11px] font-black uppercase tracking-[0.18em] text-secondary-500">Entreprise affichée</p>
 								<p className="mt-2 text-xl font-bold text-secondary-900">{selectedCompany.nom}</p>
 								<p className="mt-1 text-sm text-secondary-600">
 									SIRET {selectedCompany.siret} · {selectedCompany.adresse_ligne}, {selectedCompany.code_postal} {selectedCompany.ville}
 								</p>
 							</div>
 							<div className="rounded-2xl bg-secondary-900 px-4 py-3 text-sm font-semibold text-white shadow-lg">
-								Vue filtree par entreprise
+								Vue filtrée par entreprise
 							</div>
 						</div>
 					) : null}
@@ -287,7 +287,7 @@ const submitNewProduct = async (e) => {
 					title="Entreprise suivie"
 				/>
 				<ActionButton className="h-12 px-5 shadow-lg" onClick={downloadSalesReport} type="button">
-					Telecharger rapport ventes (CSV)
+					Télécharger rapport ventes (CSV)
 				</ActionButton>
 			</div>
 			</div>
@@ -300,7 +300,7 @@ const submitNewProduct = async (e) => {
 			</section>
 
 				<SurfaceCard className="col-span-12 border border-neutral-200 p-5 xl:col-span-7">
-					<DashboardPanelHeading eyebrow="Analytics" title="Evolution des ventes" description="6 derniers mois" />
+					<DashboardPanelHeading eyebrow="Analytics" title="Évolution des ventes" description="6 derniers mois" />
 					<div className="h-72">
 						<ResponsiveContainer width="100%" height="100%">
 							<AreaChart data={monthlyRevenue}>
@@ -337,7 +337,7 @@ const submitNewProduct = async (e) => {
 				</SurfaceCard>
 
 				<SurfaceCard className="col-span-12 border border-neutral-200 p-5 xl:col-span-5">
-					<DashboardPanelHeading eyebrow="Logistique" title="Repartition des livraisons" description="Canaux utilises" />
+					<DashboardPanelHeading eyebrow="Logistique" title="Répartition des livraisons" description="Canaux utilisés" />
 					<div className="h-72">
 						<ResponsiveContainer width="100%" height="100%">
 							<PieChart>
@@ -360,7 +360,7 @@ const submitNewProduct = async (e) => {
 				/>
 
 				<SurfaceCard className="col-span-12 border border-neutral-200 bg-[linear-gradient(180deg,#fffefb_0%,#f7f3ea_100%)] p-5 xl:col-span-12">
-					<DashboardPanelHeading eyebrow="Catalogue" title="Mes produits en vente" description="Gerez vos produits et ajoutez-en de nouveaux" />
+					<DashboardPanelHeading eyebrow="Catalogue" title="Mes produits en vente" description="Gérez vos produits et ajoutez-en de nouveaux" />
 					{loadingProducts ? (
 						<div className="text-sm text-secondary-600">Chargement des produits...</div>
 					) : currentProductError ? (
@@ -426,7 +426,7 @@ const submitNewProduct = async (e) => {
 															if (!window.confirm('Supprimer ce produit ?')) return;
 															try {
 																await deleteProductMutation.mutateAsync(p.idProduit || p.id);
-																toast.showSuccess('Produit supprime.');
+																toast.showSuccess('Produit supprimé.');
 															} catch (err) {
 																const message = err.message || 'Erreur suppression';
 																setProductError(message);
@@ -454,12 +454,12 @@ const submitNewProduct = async (e) => {
 															</div>
 															<div className="mt-2 flex flex-wrap gap-2">
 																<span className="rounded-full bg-primary-100 px-3 py-1 text-xs font-semibold text-primary-700">{p.nature ?? 'Autre'}</span>
-																{Boolean(p.visible) ? <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Visible</span> : <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">Masque</span>}
+																{Boolean(p.visible) ? <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Visible</span> : <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">Masqué</span>}
 															</div>
 															</div>
 													</div>
 													<div className="flex items-center gap-2">
-														<button className="rounded-xl bg-secondary-100 px-4 py-2 text-sm font-semibold text-secondary-700 transition hover:bg-secondary-200" onClick={() => { setEditingId(p.idProduit || p.id); setEditingValues({ nomProduit: p.nomProduit ?? p.nom ?? p.name, prix: p.prix, stock: p.stock, visible: Boolean(p.visible), nature: p.nature ?? '' }); }}>Editer</button>
+														<button className="rounded-xl bg-secondary-100 px-4 py-2 text-sm font-semibold text-secondary-700 transition hover:bg-secondary-200" onClick={() => { setEditingId(p.idProduit || p.id); setEditingValues({ nomProduit: p.nomProduit ?? p.nom ?? p.name, prix: p.prix, stock: p.stock, visible: Boolean(p.visible), nature: p.nature ?? '' }); }}>Éditer</button>
 													</div>
 												</div>
 											)}
@@ -563,12 +563,12 @@ const submitNewProduct = async (e) => {
 									<div>
 										<p className="font-semibold text-secondary-900">Commande #{order.idCommande}</p>
 										<p className="text-sm text-secondary-600">
-											{new Date(order.dateCommande).toLocaleDateString('fr-FR')} • {order.modeLivraison || 'non renseigne'} • {order.status}
+											{new Date(order.dateCommande).toLocaleDateString('fr-FR')} • {order.modeLivraison || 'non renseigné'} • {order.status}
 										</p>
 										<p className="mt-1 text-sm font-medium text-secondary-700">Total commande: {euro.format(order.prixTotal || 0)}</p>
 									</div>
 									<ActionButton className="h-10" onClick={() => downloadInvoice(order.idCommande)} type="button">
-										Telecharger facture
+										Télécharger facture
 									</ActionButton>
 								</div>
 							))}

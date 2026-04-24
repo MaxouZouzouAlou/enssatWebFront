@@ -40,7 +40,7 @@ export async function createIncident(payload) {
 		body: JSON.stringify(payload)
 	});
 
-	return readJsonResponse(response, 'Creation du ticket impossible pour le moment.');
+	return readJsonResponse(response, 'Création du ticket impossible pour le moment.');
 }
 
 export async function replyToIncident(ticketId, message) {
@@ -53,7 +53,7 @@ export async function replyToIncident(ticketId, message) {
 		body: JSON.stringify({ message })
 	});
 
-	return readJsonResponse(response, 'Reponse impossible pour le moment.');
+	return readJsonResponse(response, 'Réponse impossible pour le moment.');
 }
 
 export async function updateIncidentStatus(ticketId, status, commentaire = '') {
@@ -66,5 +66,5 @@ export async function updateIncidentStatus(ticketId, status, commentaire = '') {
 		body: JSON.stringify({ status, commentaire })
 	});
 
-	return readJsonResponse(response, 'Mise a jour du statut impossible pour le moment.');
+	return readJsonResponse(response, 'Mise à jour du statut impossible pour le moment.');
 }

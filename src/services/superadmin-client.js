@@ -61,7 +61,7 @@ export async function updateAdminProductVisibility(idProduit, visible) {
 		credentials: 'include',
 		body: JSON.stringify({ visible })
 	});
-	return parseAdminResponse(response, 'Impossible de mettre a jour la visibilite du produit.');
+	return parseAdminResponse(response, 'Impossible de mettre à jour la visibilité du produit.');
 }
 
 export async function deleteAdminProduct(idProduit) {

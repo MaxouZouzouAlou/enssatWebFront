@@ -15,7 +15,7 @@ export default function IncidentTable({
 		{ key: 'title', header: 'Titre' },
 		{
 			key: 'severity',
-			header: 'Severite',
+			header: 'Sévérité',
 			render: (ticket) => (
 				<span className={`rounded-full border px-2 py-1 text-xs font-semibold ${severityStyles[ticket.severity]}`}>
 					{severityLabel[ticket.severity] || ticket.severity}
@@ -24,7 +24,7 @@ export default function IncidentTable({
 		},
 		{ key: 'status', header: 'Statut', render: (ticket) => statusLabel[ticket.status] || ticket.status },
 		{ key: 'moduleConcerne', header: 'Module' },
-		{ key: 'responseCount', header: 'Reponses' },
+		{ key: 'responseCount', header: 'Réponses' },
 		{
 			key: 'action',
 			header: 'Action',
@@ -60,7 +60,7 @@ export default function IncidentTable({
 						onChange={(event) => onSeverityFilterChange(event.target.value)}
 						className="rounded-xl bg-neutral-100 px-2.5 py-2 text-sm outline-none ring-primary-500/20 focus:ring"
 					>
-						<option value="all">Toutes severites</option>
+						<option value="all">Toutes sévérités</option>
 						{severityOptions.map((option) => (
 							<option key={option.value} value={option.value}>{option.label}</option>
 						))}
@@ -68,7 +68,7 @@ export default function IncidentTable({
 				</div>
 			</div>
 
-			<DataTable columns={columns} emptyLabel="Aucun ticket a afficher." getRowKey={(ticket) => ticket.id} rows={filteredTickets} />
+			<DataTable columns={columns} emptyLabel="Aucun ticket à afficher." getRowKey={(ticket) => ticket.id} rows={filteredTickets} />
 		</SurfaceCard>
 	);
 }
