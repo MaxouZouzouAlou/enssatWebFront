@@ -204,7 +204,7 @@ export default function LoginForm({ onAuthenticated, onSwitchToRegister }) {
 			<p className="mt-6 text-center text-sm text-neutral-600">
 				Pas encore de compte ?{' '}
 				<button type="button" className="font-semibold text-primary-600 hover:text-primary-700" onClick={onSwitchToRegister}>
-					Creer un compte
+					Créer un compte
 				</button>
 			</p>
 		</div>

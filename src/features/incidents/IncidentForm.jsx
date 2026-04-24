@@ -50,7 +50,7 @@ export default function IncidentForm({ loading, onSubmit }) {
 				/>
 				<FormField
 					as="select"
-					label="Module concerne"
+					label="Module concerné"
 					name="incident-module"
 					value={form.moduleConcerne}
 					onChange={update('moduleConcerne')}
@@ -61,7 +61,7 @@ export default function IncidentForm({ loading, onSubmit }) {
 				</FormField>
 				<FormField
 					as="select"
-					label="Severite"
+					label="Sévérité"
 					name="incident-severity"
 					value={form.severity}
 					onChange={update('severity')}
@@ -75,7 +75,7 @@ export default function IncidentForm({ loading, onSubmit }) {
 					disabled={loading}
 					className="w-full"
 				>
-					{loading ? 'Creation...' : 'Creer le ticket'}
+					{loading ? 'Création...' : 'Créer le ticket'}
 				</ActionButton>
 			</form>
 		</SurfaceCard>

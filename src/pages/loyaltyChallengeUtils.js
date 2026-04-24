@@ -3,7 +3,7 @@ export function isChallengeEligible(challenge) {
 }
 
 export function getChallengeActionLabel(challenge) {
-	if (!challenge?.canClaim) return 'Defi termine';
-	if (challenge?.conditionsRemplies === true) return 'Valider le defi';
+	if (!challenge?.canClaim) return 'Défi terminé';
+	if (challenge?.conditionsRemplies === true) return 'Valider le défi';
 	return 'Conditions non remplies';
 }

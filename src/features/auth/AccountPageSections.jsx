@@ -56,7 +56,7 @@ export function PasswordBlock() {
 
 		if (form.next.length < 8) {
 			setError('Le nouveau mot de passe doit contenir au moins 8 caractères.');
-			toast.showError('Le nouveau mot de passe doit contenir au moins 8 caracteres.');
+			toast.showError('Le nouveau mot de passe doit contenir au moins 8 caractères.');
 			return;
 		}
 

@@ -19,5 +19,5 @@ test('allows challenge claiming only when the conditions are explicitly verified
 	};
 
 	expect(isChallengeEligible(challenge)).toBe(true);
-	expect(getChallengeActionLabel(challenge)).toBe('Valider le defi');
+	expect(getChallengeActionLabel(challenge)).toBe('Valider le défi');
 });

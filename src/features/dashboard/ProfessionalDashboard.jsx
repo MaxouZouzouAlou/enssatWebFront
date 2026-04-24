@@ -33,7 +33,7 @@ function RestrictedDashboardState({ title, message }) {
 	return (
 		<PageShell contentClassName="max-w-2xl">
 			<SurfaceCard className="p-6">
-				<p className="text-xs font-bold uppercase tracking-[0.12em] text-primary-600">Acces restreint</p>
+				<p className="text-xs font-bold uppercase tracking-[0.12em] text-primary-600">Accès restreint</p>
 				<h1 className="mt-2 text-3xl font-bold">{title}</h1>
 				<p className="mt-3 leading-7 text-neutral-600">{message}</p>
 			</SurfaceCard>
@@ -81,11 +81,11 @@ export default function ProfessionalDashboard({
 		setDocumentMessage('');
 		try {
 			await downloadProfessionalSalesReport(professionalId, 90, selectedCompanyId);
-			const text = 'Rapport des ventes telecharge.';
+			const text = 'Rapport des ventes téléchargé.';
 			setDocumentMessage(text);
 			toast.showSuccess(text);
 		} catch (err) {
-			const text = err.message || 'Impossible de telecharger le rapport.';
+			const text = err.message || 'Impossible de télécharger le rapport.';
 			setDocumentMessage(text);
 			toast.showError(text);
 		}
@@ -95,7 +95,7 @@ export default function ProfessionalDashboard({
 		return (
 			<RestrictedDashboardState
 				title="Espace pro indisponible"
-				message="Cette page est reservee aux comptes professionnels verifies. Connectez-vous avec un compte pro pour acceder a vos statistiques de vente."
+				message="Cette page est réservée aux comptes professionnels vérifiés. Connectez-vous avec un compte pro pour accéder à vos statistiques de vente."
 			/>
 		);
 	}
@@ -104,7 +104,7 @@ export default function ProfessionalDashboard({
 		return (
 			<RestrictedDashboardState
 				title="Espace pro indisponible"
-				message="Le profil professionnel n est pas encore disponible pour cette session."
+				message="Le profil professionnel n'est pas encore disponible pour cette session."
 			/>
 		);
 	}
@@ -130,12 +130,12 @@ export default function ProfessionalDashboard({
 		["Chiffre d'affaires (30j)", euro.format(metrics.revenue30d || 0), formatTrend(metrics.revenueTrendPct), 'text-primary-600'],
 		['Nombre de ventes', number.format(metrics.sales30d || 0), formatTrend(metrics.salesTrendPct), 'text-primary-600'],
 		['Panier moyen', euro.format(metrics.averageBasket30d || 0), `${number.format(metrics.orders30d || 0)} commande(s)`, 'text-primary-600'],
-		['Taux de rupture', `${Number(metrics.outOfStockRatePct || 0).toFixed(1)}%`, `${number.format(metrics.outOfStockProducts || 0)} produit(s) a surveiller`, 'text-tertiary-500'],
+		['Taux de rupture', `${Number(metrics.outOfStockRatePct || 0).toFixed(1)}%`, `${number.format(metrics.outOfStockProducts || 0)} produit(s) à surveiller`, 'text-tertiary-500'],
 	];
 	const customerColumns = [
 		{ key: 'customer', header: 'Client' },
 		{ key: 'orders', header: 'Commandes' },
-		{ key: 'revenue', header: 'CA genere', render: (row) => euro.format(row.revenue) },
+		{ key: 'revenue', header: 'CA généré', render: (row) => euro.format(row.revenue) },
 	];
 
 	return (
@@ -150,14 +150,14 @@ export default function ProfessionalDashboard({
 						{selectedCompany ? (
 							<div className="mt-4 grid gap-3 rounded-[1.5rem] border border-white/70 bg-white/80 p-4 shadow-[0_12px_30px_rgba(34,51,35,.08)] backdrop-blur sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
 								<div>
-									<p className="text-[11px] font-black uppercase tracking-[0.18em] text-secondary-500">Entreprise affichee</p>
+									<p className="text-[11px] font-black uppercase tracking-[0.18em] text-secondary-500">Entreprise affichée</p>
 									<p className="mt-2 text-xl font-bold text-secondary-900">{selectedCompany.nom}</p>
 									<p className="mt-1 text-sm text-secondary-600">
 										SIRET {selectedCompany.siret} · {selectedCompany.adresse_ligne}, {selectedCompany.code_postal} {selectedCompany.ville}
 									</p>
 								</div>
 								<div className="rounded-2xl bg-secondary-900 px-4 py-3 text-sm font-semibold text-white shadow-lg">
-									Vue filtree par entreprise
+									Vue filtrée par entreprise
 								</div>
 							</div>
 						) : null}
@@ -173,7 +173,7 @@ export default function ProfessionalDashboard({
 							title="Entreprise suivie"
 						/>
 						<ActionButton className="h-12 px-5 shadow-lg" onClick={downloadSalesReport} type="button">
-							Telecharger rapport ventes (CSV)
+							Télécharger rapport ventes (CSV)
 						</ActionButton>
 					</div>
 				</div>
@@ -186,7 +186,7 @@ export default function ProfessionalDashboard({
 			</section>
 
 			<SurfaceCard className="col-span-12 border border-neutral-200 p-5 xl:col-span-7">
-				<DashboardPanelHeading eyebrow="Analytics" title="Evolution des ventes" description="6 derniers mois" />
+				<DashboardPanelHeading eyebrow="Analytics" title="Évolution des ventes" description="6 derniers mois" />
 				<div className="h-72">
 					<ResponsiveContainer width="100%" height="100%">
 						<AreaChart data={monthlyRevenue}>
@@ -223,7 +223,7 @@ export default function ProfessionalDashboard({
 			</SurfaceCard>
 
 			<SurfaceCard className="col-span-12 border border-neutral-200 p-5 xl:col-span-5">
-				<DashboardPanelHeading eyebrow="Logistique" title="Repartition des livraisons" description="Canaux utilises" />
+				<DashboardPanelHeading eyebrow="Logistique" title="Répartition des livraisons" description="Canaux utilisés" />
 				<div className="h-72">
 					<ResponsiveContainer width="100%" height="100%">
 						<PieChart>

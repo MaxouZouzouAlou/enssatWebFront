@@ -78,22 +78,22 @@ export default function LoyaltyPage() {
   const onClaimChallenge = async (code) => {
     const challenge = (loyalty?.challenges || []).find((item) => item.code === code);
     if (!isChallengeEligible(challenge)) {
-      setError('Ce defi ne peut pas etre valide tant que ses conditions ne sont pas remplies.');
+      setError('Ce défi ne peut pas être validé tant que ses conditions ne sont pas remplies.');
       return;
     }
 
     try {
       const result = await claimMutation.mutateAsync(code);
-      setMessage(`Defi valide: +${result.challenge.pointsRecompense} points.`);
+      setMessage(`Défi validé : +${result.challenge.pointsRecompense} points.`);
     } catch (err) {
-      setError(err.message || 'Impossible de valider ce defi.');
+      setError(err.message || 'Impossible de valider ce défi.');
     }
   };
 
   const onRedeemVoucher = async (pointsToSpend) => {
     try {
       const result = await redeemMutation.mutateAsync(pointsToSpend);
-      setMessage(`Bon cree: ${result.voucher.codeBon} (${euro(result.voucher.valeurEuros)}).`);
+      setMessage(`Bon créé : ${result.voucher.codeBon} (${euro(result.voucher.valeurEuros)}).`);
     } catch (err) {
       setError(err.message || "Impossible de créer un bon d'achat.");
     }
@@ -101,12 +101,12 @@ export default function LoyaltyPage() {
 
   return (
     <PageShell contentClassName="max-w-5xl">
-      <SectionHeader eyebrow="Fidelite" title="Mes points et recompenses">
+      <SectionHeader eyebrow="Fidélité" title="Mes points et récompenses">
         <p>Suivez les points gagnés sur vos commandes et convertissez-les en bons d'achat utilisables au moment du paiement.</p>
       </SectionHeader>
 
       <SurfaceCard className="mt-8 p-5 sm:p-8">
-        {loading ? <p className="text-sm text-neutral-600">Chargement de votre fidelite...</p> : null}
+        {loading ? <p className="text-sm text-neutral-600">Chargement de votre fidélité...</p> : null}
         {error ? <p className="mb-3 text-sm font-semibold text-red-700">{error}</p> : null}
         {message ? <p className="mb-3 text-sm font-semibold text-primary-700">{message}</p> : null}
 
@@ -140,17 +140,17 @@ export default function LoyaltyPage() {
               <SoftPanel className="space-y-3">
                 <p className="text-sm font-semibold text-secondary-900">Gagner des points via une commande</p>
                 <p className="text-sm text-neutral-600">
-                  Les points sont maintenant attribues automatiquement lors de la validation d'une commande reelle.
+                  Les points sont maintenant attribués automatiquement lors de la validation d'une commande réelle.
                 </p>
                 <p className="text-sm text-neutral-600">
-                  Regle actuelle: 1 point tous les 2 EUR reellement payes apres reduction, arrondi a l'entier inferieur.
+                  Règle actuelle : 1 point tous les 2 EUR réellement payés après réduction, arrondi à l'entier inférieur.
                 </p>
               </SoftPanel>
 
               <SoftPanel className="space-y-3">
                 <p className="text-sm font-semibold text-secondary-900">Convertir points en bon d'achat</p>
                 <p className="text-sm text-neutral-600">
-                  Choisissez un palier fixe a appliquer ensuite directement pendant le checkout.
+                  Choisissez un palier fixe à appliquer ensuite directement pendant le checkout.
                 </p>
                 <div className="grid gap-3">
                   {voucherOptions.map((option) => (
@@ -176,9 +176,9 @@ export default function LoyaltyPage() {
             </div>
 
             <div className="mt-8">
-              <h2 className="text-lg font-semibold text-secondary-900">Defis fidelite</h2>
+              <h2 className="text-lg font-semibold text-secondary-900">Défis fidélité</h2>
               <p className="mt-2 text-sm text-neutral-600">
-                Un defi n&apos;est validable que lorsque ses conditions ont ete verifiees. Les validations manuelles sans preuve ne sont plus autorisees.
+              Un défi n&apos;est validable que lorsque ses conditions ont été vérifiées. Les validations manuelles sans preuve ne sont plus autorisées.
               </p>
               <div className="mt-3 grid gap-3">
                 {(loyalty.challenges || []).map((challenge) => (
@@ -193,7 +193,7 @@ export default function LoyaltyPage() {
                         {challenge.canClaim
                           ? challenge.conditionsRemplies === true
                             ? 'Conditions remplies.'
-                            : 'Conditions en attente de verification.'
+                            : 'Conditions en attente de vérification.'
                           : 'Nombre maximal de validations atteint.'}
                       </p>
                     </div>

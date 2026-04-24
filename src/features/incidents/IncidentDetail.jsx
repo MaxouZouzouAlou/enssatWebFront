@@ -64,13 +64,13 @@ export default function IncidentDetail({
 				<div className="text-sm text-neutral-600">
 					<p><span className="font-semibold text-secondary-800">Statut :</span> {statusLabel[ticket.status] || ticket.status}</p>
 					<p><span className="font-semibold text-secondary-800">Module :</span> {ticket.moduleConcerne}</p>
-					<p><span className="font-semibold text-secondary-800">Createur :</span> {formatUser(ticket.creator)}</p>
+					<p><span className="font-semibold text-secondary-800">Créateur :</span> {formatUser(ticket.creator)}</p>
 				</div>
 			</SoftPanel>
 
 			<div className="mt-4 grid gap-4 lg:grid-cols-2">
 				<div>
-					<h3 className="text-lg font-semibold">Reponses super admin</h3>
+					<h3 className="text-lg font-semibold">Réponses super admin</h3>
 					<div className="mt-3 max-h-96 space-y-3 overflow-y-auto pr-1">
 						{detail.responses.length ? detail.responses.map((response) => (
 							<SoftPanel as="article" key={response.id} className="rounded-xl p-3">
@@ -86,7 +86,7 @@ export default function IncidentDetail({
 						<form className="mt-4 space-y-3" onSubmit={submitReply}>
 							<FormField
 								as="textarea"
-								label="Repondre"
+								label="Répondre"
 								minLength={1}
 								name="incident-reply"
 								onChange={(event) => setMessage(event.target.value)}

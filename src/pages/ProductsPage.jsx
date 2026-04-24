@@ -227,7 +227,7 @@ function ProductsPage() {
 				<div className="mt-8 flex flex-col gap-3 rounded-2xl bg-neutral-50 px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between">
 					<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
 						<p className="text-sm font-semibold text-secondary-600">
-							Page {pagination.page} sur {totalPages} · {total} produits{isFetching && !isLoading ? ' · mise a jour...' : ''}
+							Page {pagination.page} sur {totalPages} · {total} produits{isFetching && !isLoading ? ' · mise à jour...' : ''}
 						</p>
 						<label className="inline-flex items-center gap-2 text-sm font-semibold text-secondary-700">
 							<span>Articles par page</span>

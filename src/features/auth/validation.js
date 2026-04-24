@@ -50,7 +50,7 @@ export function validateRegisterForm(form, accountType) {
   const { email, nom, prenom, password, confirmPassword } = normalized;
 
   if (!textPattern.test(prenom)) {
-    errors.prenom = 'Prenom invalide.';
+    errors.prenom = 'Prénom invalide.';
   }
   if (!textPattern.test(nom)) {
     errors.nom = 'Nom invalide.';
@@ -61,7 +61,7 @@ export function validateRegisterForm(form, accountType) {
   if (!password) {
     errors.password = 'Mot de passe requis.';
   } else if (password.length < 8) {
-    errors.password = '8 caracteres minimum.';
+    errors.password = '8 caractères minimum.';
   }
   if (!confirmPassword) {
     errors.confirmPassword = 'Confirmation requise.';

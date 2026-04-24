@@ -220,7 +220,7 @@ export default function RegisterForm({ onSwitchToLogin, preferredAccountType = n
 					<FormField
 						autoComplete="new-password"
 						error={fieldErrors.password}
-						help="8 caracteres minimum."
+						help="8 caractères minimum."
 						label="Mot de passe"
 						minLength={8}
 						name="password"
