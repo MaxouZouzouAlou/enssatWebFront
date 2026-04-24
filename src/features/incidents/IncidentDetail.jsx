@@ -71,7 +71,7 @@ export default function IncidentDetail({
 			<div className="mt-4 grid gap-4 lg:grid-cols-2">
 				<div>
 					<h3 className="text-lg font-semibold">Reponses super admin</h3>
-					<div className="mt-3 space-y-3">
+					<div className="mt-3 max-h-96 space-y-3 overflow-y-auto pr-1">
 						{detail.responses.length ? detail.responses.map((response) => (
 							<SoftPanel as="article" key={response.id} className="rounded-xl p-3">
 								<p className="text-xs font-semibold text-primary-600">{formatUser(response.author)}</p>
@@ -106,7 +106,7 @@ export default function IncidentDetail({
 
 				<div>
 					<h3 className="text-lg font-semibold">Historique</h3>
-					<div className="mt-3 space-y-3">
+					<div className="mt-3 max-h-96 space-y-3 overflow-y-auto pr-1">
 						{detail.history.map((event) => (
 							<SoftPanel as="article" key={event.id} className="rounded-xl p-3 text-sm">
 								<p className="font-semibold text-secondary-800">

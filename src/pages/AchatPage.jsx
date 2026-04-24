@@ -204,12 +204,14 @@ function AchatPage() {
 
 							<div className="space-y-2">
 								<p className="text-sm font-semibold text-secondary-900">Derniers avis produits</p>
-								{(reviewsData?.productReviews?.reviews || []).slice(0, 3).map((review) => (
-									<SoftPanel key={`p-${review.idAvisProduit}`} className="p-3">
-										<p className="text-xs text-neutral-500">{review.prenom} {review.nom} • {review.note}/5</p>
-										<p className="text-sm text-neutral-700">{review.commentaire || 'Sans commentaire'}</p>
-									</SoftPanel>
-								))}
+								<div className="max-h-80 space-y-2 overflow-y-auto pr-1">
+									{(reviewsData?.productReviews?.reviews || []).slice(0, 3).map((review) => (
+										<SoftPanel key={`p-${review.idAvisProduit}`} className="p-3">
+											<p className="text-xs text-neutral-500">{review.prenom} {review.nom} • {review.note}/5</p>
+											<p className="text-sm text-neutral-700">{review.commentaire || 'Sans commentaire'}</p>
+										</SoftPanel>
+									))}
+								</div>
 							</div>
 						</div>
 					) : (

@@ -8,7 +8,7 @@ export const homeImages = {
 	fruits: fruitsImage,
 	dairy: dairyImage,
 	customer: customerImage,
-	producer: dairyImage,
+	producer: customerImage,
 };
 
 export const collections = [

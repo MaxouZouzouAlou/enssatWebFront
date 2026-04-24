@@ -26,10 +26,11 @@ const emptyForm = {
 	}
 };
 
-export default function RegisterForm({ onSwitchToLogin }) {
+export default function RegisterForm({ onSwitchToLogin, preferredAccountType = null }) {
 	const toast = useToast();
 	const [accountType, setAccountType] = useState(() => {
 		const saved = window.sessionStorage.getItem(REGISTER_DRAFT_KEY);
+		if (preferredAccountType) return preferredAccountType;
 		return saved ? (JSON.parse(saved).accountType || 'particulier') : 'particulier';
 	});
 	const [form, setForm] = useState(() => {

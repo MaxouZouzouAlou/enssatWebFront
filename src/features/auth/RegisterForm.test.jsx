@@ -58,6 +58,13 @@ test('submits a normalized registration payload', async () => {
 	});
 });
 
+test('uses the explicit professional mode when requested', () => {
+	renderRegisterForm({ preferredAccountType: 'professionnel' });
+
+	expect(screen.getByRole('button', { name: 'Professionnel' })).toHaveClass('bg-primary-500');
+	expect(screen.getByLabelText("Nom de l'entreprise")).toBeInTheDocument();
+});
+
 test('restores the verification step from session storage', () => {
 	window.sessionStorage.setItem('register-verification-email', 'alice@example.com');
 

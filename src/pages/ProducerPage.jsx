@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useParams } from 'react-router';
+import { Link, useNavigate, useParams } from 'react-router';
 import { ActionButton } from '../components/Button.jsx';
 import PageShell from '../components/layout/PageShell.jsx';
 import SectionHeader from '../components/layout/SectionHeader.jsx';
@@ -28,6 +28,7 @@ function renderStarRow(note) {
 
 export default function ProducerPage({ isAuthenticated = false, accountType = 'particulier' }) {
 	const { idProfessionnel } = useParams();
+	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const [reviewError, setReviewError] = useState('');
 	const [reviewMessage, setReviewMessage] = useState('');
@@ -81,6 +82,14 @@ export default function ProducerPage({ isAuthenticated = false, accountType = 'p
 		}
 	};
 
+	const goBack = () => {
+		if (window.history.length > 1) {
+			navigate(-1);
+			return;
+		}
+		navigate('/produits');
+	};
+
 	if (!idProfessionnel) {
 		return (
 			<PageShell contentClassName="flex min-h-[50vh] items-center justify-center">
@@ -119,13 +128,17 @@ export default function ProducerPage({ isAuthenticated = false, accountType = 'p
 	if (!profile) return null;
 
 	return (
-		<PageShell contentClassName="max-w-6xl">
-			<div className="mb-4">
-				<Link className="inline-flex items-center gap-1 text-sm font-semibold text-primary-700 hover:text-primary-800" to="/produits">
-					<span className="material-symbols-rounded text-base">arrow_back</span>
-					Retour au catalogue
-				</Link>
-			</div>
+			<PageShell contentClassName="max-w-6xl">
+				<div className="mb-4">
+					<button
+						type="button"
+						onClick={goBack}
+						className="inline-flex items-center gap-1 text-sm font-semibold text-primary-700 hover:text-primary-800"
+					>
+						<span className="material-symbols-rounded text-base">arrow_back</span>
+						Retour
+					</button>
+				</div>
 
 			<div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
 				{/* Hero image card */}
@@ -251,12 +264,13 @@ export default function ProducerPage({ isAuthenticated = false, accountType = 'p
 			{/* Reviews list */}
 			<SurfaceCard className="mt-6 p-6">
 				<h2 className="text-xl font-bold text-secondary-900">Derniers avis</h2>
-				<div className="mt-4 grid gap-3">
+				<div className="mt-4 grid max-h-96 gap-3 overflow-y-auto pr-1">
 					{reviews.length ? reviews.map((review) => (
 						<SoftPanel key={review.idAvisProfessionnel} className="p-4">
 							<p className="text-xs font-semibold uppercase tracking-[0.12em] text-neutral-500">
-								{review.prenom} {review.nom} · {renderStarRow(review.note)}
+								{review.prenom} {review.nom}
 							</p>
+							<p className="mt-2 text-sm font-semibold text-amber-500">{renderStarRow(review.note)}</p>
 							<p className="mt-2 text-sm leading-7 text-secondary-700">{review.commentaire || 'Sans commentaire'}</p>
 						</SoftPanel>
 					)) : (

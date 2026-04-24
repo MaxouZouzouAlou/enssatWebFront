@@ -14,7 +14,7 @@ function getFooterLinks({ isAuthenticated, isProfessional }) {
 			title: 'Producteurs',
 			links: [
 				...(isProfessional ? [['Espace pro', '/espace-pro']] : []),
-				...(isAuthenticated ? [] : [['Devenir producteur', '/register']])
+				...(isAuthenticated ? [] : [['Devenir producteur', '/register?type=professionnel']])
 			]
 		},
 		{

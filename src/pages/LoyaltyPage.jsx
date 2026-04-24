@@ -7,6 +7,7 @@ import SectionHeader from '../components/layout/SectionHeader.jsx';
 import SoftPanel from '../components/layout/SoftPanel.jsx';
 import SurfaceCard from '../components/layout/SurfaceCard.jsx';
 import useAuthProfile from '../features/auth/useAuthProfile';
+import { getChallengeActionLabel, isChallengeEligible } from './loyaltyChallengeUtils.js';
 import {
   claimLoyaltyChallenge,
   fetchMyLoyalty,
@@ -75,6 +76,12 @@ export default function LoyaltyPage() {
   }
 
   const onClaimChallenge = async (code) => {
+    const challenge = (loyalty?.challenges || []).find((item) => item.code === code);
+    if (!isChallengeEligible(challenge)) {
+      setError('Ce defi ne peut pas etre valide tant que ses conditions ne sont pas remplies.');
+      return;
+    }
+
     try {
       const result = await claimMutation.mutateAsync(code);
       setMessage(`Defi valide: +${result.challenge.pointsRecompense} points.`);
@@ -170,6 +177,9 @@ export default function LoyaltyPage() {
 
             <div className="mt-8">
               <h2 className="text-lg font-semibold text-secondary-900">Defis fidelite</h2>
+              <p className="mt-2 text-sm text-neutral-600">
+                Un defi n&apos;est validable que lorsque ses conditions ont ete verifiees. Les validations manuelles sans preuve ne sont plus autorisees.
+              </p>
               <div className="mt-3 grid gap-3">
                 {(loyalty.challenges || []).map((challenge) => (
                   <SoftPanel key={challenge.code} className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -179,14 +189,21 @@ export default function LoyaltyPage() {
                       <p className="mt-1 text-xs text-neutral-500">
                         +{challenge.pointsRecompense} pts • {challenge.claimsCount}/{challenge.maxClaims} validation(s)
                       </p>
+                      <p className="mt-1 text-xs font-semibold text-secondary-700">
+                        {challenge.canClaim
+                          ? challenge.conditionsRemplies === true
+                            ? 'Conditions remplies.'
+                            : 'Conditions en attente de verification.'
+                          : 'Nombre maximal de validations atteint.'}
+                      </p>
                     </div>
                     <ActionButton
                       type="button"
                       onClick={() => onClaimChallenge(challenge.code)}
-                      disabled={!challenge.canClaim || claimMutation.isPending}
+                      disabled={!isChallengeEligible(challenge) || claimMutation.isPending}
                       className="h-10"
                     >
-                      {challenge.canClaim ? 'Valider le defi' : 'Defi termine'}
+                      {getChallengeActionLabel(challenge)}
                     </ActionButton>
                   </SoftPanel>
                 ))}

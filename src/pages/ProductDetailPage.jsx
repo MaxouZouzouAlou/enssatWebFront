@@ -421,7 +421,7 @@ function ProductDetailPage() {
 							<p className="mt-4 text-sm text-secondary-600">Connectez-vous avec un compte particulier pour laisser un avis.</p>
 						)}
 
-						<div className="mt-4 space-y-3">
+						<div className="mt-4 max-h-96 space-y-3 overflow-y-auto pr-1">
 							{(reviewsData.reviews || []).length ? (
 								reviewsData.reviews.map((review) => {
 									const isMyReview =

@@ -70,7 +70,7 @@ function getCtaContent({ isAuthenticated, isProfessional }) {
 		title: 'Vendez mieux, gardez la main.',
 		description: 'Vous produisez localement ? Créez un compte professionnel pour gérer vos lieux de vente, vos produits, vos stocks et vos commandes.',
 		primaryLabel: 'Devenir producteur',
-		primaryPath: '/register',
+		primaryPath: '/register?type=professionnel',
 		secondaryLabel: null,
 		secondaryPath: null
 	};
