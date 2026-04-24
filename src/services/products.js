@@ -1,4 +1,4 @@
-import { API_BASE_URL } from './auth-client.js';
+import { request, requestJson } from './http-client.js';
 
 function appendIfPresent(params, key, value) {
 	if (value == null || value === '') return;
@@ -33,9 +33,8 @@ async function getListProducts({
 	appendIfPresent(params, 'prixMax', prixMax);
 	appendIfPresent(params, 'sort', sort);
 
-	const response = await fetch(`${API_BASE_URL}/products/?${params.toString()}`, {
+	const response = await request(`/products/?${params.toString()}`, {
 		method: 'GET',
-		credentials: 'include',
 	});
 	if (!response.ok) {
 		throw new Error('Failed to fetch products');
@@ -44,15 +43,10 @@ async function getListProducts({
 }
 
 async function getProductById(idProduit) {
-	const response = await fetch(`${API_BASE_URL}/products/${idProduit}`, {
+	return requestJson(`/products/${idProduit}`, {
 		method: 'GET',
-		credentials: 'include',
+		defaultMessage: 'Failed to fetch product'
 	});
-	const data = await response.json().catch(() => ({}));
-	if (!response.ok) {
-		throw new Error(data.error || 'Failed to fetch product');
-	}
-	return data;
 }
 
 const productsService = { getListProducts, getProductById };

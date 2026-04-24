@@ -1,4 +1,6 @@
-import { API_BASE_URL } from './auth-client';
+import { API_BASE_URL } from './api-config.js';
+import { request, requestJson, readResponse } from './http-client.js';
+import { extractFileNameFromDisposition, triggerDownload } from '../utils/download.js';
 
 function withCompanyScope(url, idEntreprise) {
 	if (idEntreprise == null) return url;
@@ -8,46 +10,9 @@ function withCompanyScope(url, idEntreprise) {
 }
 
 export async function fetchProfessionalDashboard(idProfessionnel, idEntreprise = null) {
-	const response = await fetch(withCompanyScope(`${API_BASE_URL}/professionnels/${idProfessionnel}/dashboard`, idEntreprise), {
-		credentials: 'include'
+	return requestJson(withCompanyScope(`${API_BASE_URL}/professionnels/${idProfessionnel}/dashboard`, idEntreprise), {
+		defaultMessage: 'Impossible de récupérer le dashboard professionnel.'
 	});
-
-	const data = await response.json().catch(() => ({}));
-	if (!response.ok) {
-		throw new Error(data.error || 'Impossible de récupérer le dashboard professionnel.');
-	}
-	return data;
-}
-
-function triggerDownload(blob, fileName) {
-	const url = window.URL.createObjectURL(blob);
-	const link = document.createElement('a');
-	link.href = url;
-	link.download = fileName;
-	document.body.appendChild(link);
-	link.click();
-	link.remove();
-	window.URL.revokeObjectURL(url);
-}
-
-function extractFileNameFromDisposition(contentDisposition, fallbackName) {
-	if (!contentDisposition) return fallbackName;
-
-	const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
-	if (utf8Match?.[1]) {
-		try {
-			return decodeURIComponent(utf8Match[1]);
-		} catch {
-			return utf8Match[1];
-		}
-	}
-
-	const asciiMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
-	if (asciiMatch?.[1]) {
-		return asciiMatch[1];
-	}
-
-	return fallbackName;
 }
 
 export async function downloadProfessionalSalesReport(idProfessionnel, days = 90, idEntreprise = null) {
@@ -56,12 +21,10 @@ export async function downloadProfessionalSalesReport(idProfessionnel, days = 90
 	if (idEntreprise != null) {
 		scopedUrl.searchParams.set('idEntreprise', String(idEntreprise));
 	}
-	const response = await fetch(scopedUrl.toString(), {
-		credentials: 'include'
-	});
+	const response = await request(scopedUrl.toString());
 
 	if (!response.ok) {
-		const data = await response.json().catch(() => ({}));
+		const { data } = await readResponse(response);
 		throw new Error(data.error || 'Impossible de télécharger le rapport de ventes.');
 	}
 
@@ -72,15 +35,12 @@ export async function downloadProfessionalSalesReport(idProfessionnel, days = 90
 }
 
 export async function downloadOrderInvoice(idProfessionnel, idCommande, idEntreprise = null) {
-	const response = await fetch(
+	const response = await request(
 		withCompanyScope(`${API_BASE_URL}/professionnels/${idProfessionnel}/documents/commande/${idCommande}/facture.pdf`, idEntreprise),
-		{
-		credentials: 'include'
-		}
 	);
 
 	if (!response.ok) {
-		const data = await response.json().catch(() => ({}));
+		const { data } = await readResponse(response);
 		throw new Error(data.error || 'Impossible de télécharger la facture.');
 	}
 

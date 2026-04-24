@@ -1,47 +1,35 @@
-import { API_BASE_URL } from './auth-client.js';
-
-async function parseResponse(response, defaultMessage) {
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data.error || defaultMessage);
-  }
-  return data;
-}
+import { requestJson } from './http-client.js';
 
 export async function fetchProductReviews(idProduit) {
-  const response = await fetch(`${API_BASE_URL}/reviews/products/${idProduit}`, {
-    credentials: 'include',
+  return requestJson(`/reviews/products/${idProduit}`, {
+    defaultMessage: 'Impossible de charger les avis produit.'
   });
-  return parseResponse(response, 'Impossible de charger les avis produit.');
 }
 
 export async function postProductReview(idProduit, payload) {
-  const response = await fetch(`${API_BASE_URL}/reviews/products/${idProduit}`, {
+  return requestJson(`/reviews/products/${idProduit}`, {
     method: 'POST',
-    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(payload),
+    defaultMessage: 'Impossible d\'enregistrer cet avis produit.'
   });
-  return parseResponse(response, 'Impossible d\'enregistrer cet avis produit.');
 }
 
 export async function fetchProfessionalReviews(idProfessionnel) {
-  const response = await fetch(`${API_BASE_URL}/reviews/professionnels/${idProfessionnel}`, {
-    credentials: 'include',
+  return requestJson(`/reviews/professionnels/${idProfessionnel}`, {
+    defaultMessage: 'Impossible de charger les avis producteur.'
   });
-  return parseResponse(response, 'Impossible de charger les avis producteur.');
 }
 
 export async function postProfessionalReview(idProfessionnel, payload) {
-  const response = await fetch(`${API_BASE_URL}/reviews/professionnels/${idProfessionnel}`, {
+  return requestJson(`/reviews/professionnels/${idProfessionnel}`, {
     method: 'POST',
-    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(payload),
+    defaultMessage: 'Impossible d\'enregistrer cet avis producteur.'
   });
-  return parseResponse(response, 'Impossible d\'enregistrer cet avis producteur.');
 }

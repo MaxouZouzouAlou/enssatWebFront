@@ -1,7 +1,8 @@
 import { createAuthClient } from 'better-auth/react';
+import { API_BASE_URL, GOOGLE_AUTH_ENABLED } from './api-config.js';
+import { requestJson, requestJsonOrNull } from './http-client.js';
 
-export const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:49161';
-export const GOOGLE_AUTH_ENABLED = process.env.REACT_APP_ENABLE_GOOGLE_AUTH === 'true';
+export { API_BASE_URL, GOOGLE_AUTH_ENABLED };
 
 export const authClient = createAuthClient({
 	baseURL: `${API_BASE_URL}/api/auth`,
@@ -10,159 +11,111 @@ export const authClient = createAuthClient({
 	}
 });
 
-async function parseJsonResponse(response, defaultMessage) {
-	const text = await response.text();
-	let data = {};
-	try {
-		data = text ? JSON.parse(text) : {};
-	} catch {
-		data = {};
-	}
-
-	if (!response.ok) {
-		throw new Error(data.error || data.message || text || defaultMessage);
-	}
-
-	return data;
-}
-
 export async function registerAccount(payload) {
-	const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+	return requestJson('/api/auth/register', {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json'
 		},
-		credentials: 'include',
-		body: JSON.stringify(payload)
+		body: JSON.stringify(payload),
+		defaultMessage: 'Inscription impossible.'
 	});
-
-	return parseJsonResponse(response, 'Inscription impossible.');
 }
 
 export async function fetchAuthProfile() {
-	const response = await fetch(`${API_BASE_URL}/api/account/profile`, {
-		credentials: 'include'
+	return requestJsonOrNull('/api/account/profile', {
+		nullStatuses: [401],
+		defaultMessage: 'Impossible de récupérer le profil.'
 	});
-
-	if (response.status === 401) return null;
-	return parseJsonResponse(response, 'Impossible de récupérer le profil.');
 }
 
 export async function updatePersonalAddress(payload) {
-	const response = await fetch(`${API_BASE_URL}/api/account/profile/address`, {
+	return requestJson('/api/account/profile/address', {
 		method: 'PUT',
 		headers: {
 			'Content-Type': 'application/json'
 		},
-		credentials: 'include',
-		body: JSON.stringify(payload)
+		body: JSON.stringify(payload),
+		defaultMessage: 'Impossible de mettre à jour votre adresse.'
 	});
-
-	return parseJsonResponse(response, 'Impossible de mettre à jour votre adresse.');
 }
 
 export async function updatePersonalProfile(payload) {
-	const response = await fetch(`${API_BASE_URL}/api/account/profile`, {
+	return requestJson('/api/account/profile', {
 		method: 'PUT',
 		headers: {
 			'Content-Type': 'application/json'
 		},
-		credentials: 'include',
-		body: JSON.stringify(payload)
+		body: JSON.stringify(payload),
+		defaultMessage: 'Impossible de mettre à jour votre profil.'
 	});
-
-	return parseJsonResponse(response, 'Impossible de mettre à jour votre profil.');
 }
 
 export async function requestEmailChange(payload) {
-	const response = await fetch(`${API_BASE_URL}/api/account/profile/change-email`, {
+	return requestJson('/api/account/profile/change-email', {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json'
 		},
-		credentials: 'include',
-		body: JSON.stringify(payload)
+		body: JSON.stringify(payload),
+		defaultMessage: "Impossible d'initialiser le changement d'email."
 	});
-
-	return parseJsonResponse(response, "Impossible d'initialiser le changement d'email.");
 }
 
 export async function deletePersonalAccount() {
-	const response = await fetch(`${API_BASE_URL}/api/account/profile`, {
+	return requestJson('/api/account/profile', {
 		method: 'DELETE',
-		credentials: 'include'
+		defaultMessage: 'Impossible de supprimer votre compte.'
 	});
-
-	return parseJsonResponse(response, 'Impossible de supprimer votre compte.');
 }
 
 export async function createProfessionalCompany(payload) {
-	const response = await fetch(`${API_BASE_URL}/api/account/profile/companies`, {
+	return requestJson('/api/account/profile/companies', {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json'
 		},
-		credentials: 'include',
-		body: JSON.stringify(payload)
+		body: JSON.stringify(payload),
+		defaultMessage: "Impossible de créer l'entreprise."
 	});
-
-	return parseJsonResponse(response, "Impossible de créer l'entreprise.");
 }
 
 export async function deleteProfessionalCompany(idEntreprise) {
-	const response = await fetch(`${API_BASE_URL}/api/account/profile/companies/${idEntreprise}`, {
+	return requestJson(`/api/account/profile/companies/${idEntreprise}`, {
 		method: 'DELETE',
-		credentials: 'include'
+		defaultMessage: "Impossible de supprimer l'entreprise."
 	});
-
-	return parseJsonResponse(response, "Impossible de supprimer l'entreprise.");
 }
 
 export async function requestPasswordReset(email) {
 	const redirectTo = `${window.location.origin}/reset-password`;
-	const response = await fetch(`${API_BASE_URL}/api/auth/request-password-reset`, {
+	return requestJson('/api/auth/request-password-reset', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		credentials: 'include',
-		body: JSON.stringify({ email, redirectTo })
+		body: JSON.stringify({ email, redirectTo }),
+		defaultMessage: 'Impossible d\'envoyer l\'email de réinitialisation.'
 	});
-	const data = await response.json().catch(() => ({}));
-	if (!response.ok) {
-		throw new Error(data.message || data.error || 'Impossible d\'envoyer l\'email de réinitialisation.');
-	}
-	return data;
 }
 
 export async function resetPassword(token, newPassword) {
-	const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
+	return requestJson('/api/auth/reset-password', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		credentials: 'include',
-		body: JSON.stringify({ token, newPassword })
+		body: JSON.stringify({ token, newPassword }),
+		defaultMessage: 'Impossible de réinitialiser le mot de passe.'
 	});
-	const data = await response.json().catch(() => ({}));
-	if (!response.ok) {
-		throw new Error(data.message || data.error || 'Impossible de réinitialiser le mot de passe.');
-	}
-	return data;
 }
 
 export async function resendVerificationEmail(email) {
-	const response = await fetch(`${API_BASE_URL}/api/auth/send-verification-email`, {
+	return requestJson('/api/auth/send-verification-email', {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json'
 		},
-		credentials: 'include',
 		body: JSON.stringify({
 			email,
 			callbackURL: `${window.location.origin}/?verified=1`
-		})
+		}),
+		defaultMessage: "Impossible d'envoyer l'email de verification."
 	});
-
-	const data = await response.json().catch(() => ({}));
-	if (!response.ok) {
-		throw new Error(data.message || data.error || "Impossible d'envoyer l'email de verification.");
-	}
-	return data;
 }

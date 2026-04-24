@@ -5,16 +5,9 @@ import PickupRouteMap from '../features/pickup-route/PickupRouteMap.jsx';
 import PageShell from '../components/layout/PageShell.jsx';
 import SectionHeader from '../components/layout/SectionHeader.jsx';
 import SurfaceCard from '../components/layout/SurfaceCard.jsx';
-import { fetchOrderById } from '../services/orders-client.js';
+import { fetchOrderById } from '../services/orders-client/orders-client.js';
+import { resolveProductImageUrl } from '../utils/productMedia.js';
 import { queryKeys } from '../utils/queryKeys.js';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:49161';
-
-function resolveProductImageUrl(imageValue) {
-	if (!imageValue || typeof imageValue !== 'string') return null;
-	if (/^https?:\/\//i.test(imageValue) || imageValue.startsWith('data:')) return imageValue;
-	return `${API_BASE_URL.replace(/\/$/, '')}${imageValue.startsWith('/') ? imageValue : `/${imageValue}`}`;
-}
 
 function formatDate(value) {
 	if (!value) return 'Date inconnue';

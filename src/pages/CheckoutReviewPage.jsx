@@ -1,14 +1,15 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Navigate, useNavigate, useOutletContext } from 'react-router';
 import { ActionButton } from '../components/Button.jsx';
+import useCheckoutDraft from '../features/checkout/useCheckoutDraft/useCheckoutDraft.js';
+import useCheckoutPreview from '../features/checkout/useCheckoutPreview/useCheckoutPreview.js';
 import CheckoutStepShell from '../features/checkout/CheckoutStepShell.jsx';
-import CheckoutSummaryCard from '../features/checkout/CheckoutSummaryCard.jsx';
-import { clearCheckoutDraft, loadCheckoutDraft } from '../features/checkout/checkoutDraft.js';
+import CheckoutSummaryCard from '../features/checkout/CheckoutSummaryCard/CheckoutSummaryCard.jsx';
 import PageShell from '../components/layout/PageShell.jsx';
 import SectionHeader from '../components/layout/SectionHeader.jsx';
 import SurfaceCard from '../components/layout/SurfaceCard.jsx';
-import { checkoutCurrentCart, previewCheckout } from '../services/orders-client.js';
+import { checkoutCurrentCart } from '../services/orders-client/orders-client.js';
 import { useToast } from '../app/ToastProvider.jsx';
 import { queryKeys } from '../utils/queryKeys.js';
 
@@ -32,39 +33,33 @@ export default function CheckoutReviewPage() {
 	const queryClient = useQueryClient();
 	const toast = useToast();
 	const { cartItems, updateQuantity } = useOutletContext();
-	const draft = useMemo(() => loadCheckoutDraft(), []);
-	const [preview, setPreview] = useState(draft.preview || null);
+	const { draft, clearDraft } = useCheckoutDraft();
 	const [submitting, setSubmitting] = useState(false);
 	const [error, setError] = useState('');
-
-	useEffect(() => {
-		let ignore = false;
-		if (!draft.modeLivraison || !draft.modePaiement) return () => {
-			ignore = true;
-		};
-
-		previewCheckout({
+	const { preview, error: previewError } = useCheckoutPreview({
+		payload: {
 			modeLivraison: draft.modeLivraison,
 			modePaiement: draft.modePaiement,
 			relayId: draft.relayId,
 			adresseLivraison: draft.adresseLivraison,
 			pickupAssignments: draft.pickupAssignments,
 			voucherId: draft.voucherId
-		})
-			.then((data) => {
-				if (!ignore) {
-					setPreview(data);
-					setError('');
-				}
-			})
-			.catch((previewError) => {
-				if (!ignore) setError(previewError.message || 'Impossible de charger la vérification finale.');
-			});
+		},
+		enabled: Boolean(draft.modeLivraison && draft.modePaiement),
+		initialPreview: draft.preview || null,
+		errorMessage: 'Impossible de charger la vérification finale.'
+	});
 
-		return () => {
-			ignore = true;
-		};
-	}, [draft.adresseLivraison, draft.modeLivraison, draft.modePaiement, draft.pickupAssignments, draft.relayId, draft.voucherId]);
+	useEffect(() => {
+		if (previewError) {
+			setError(previewError);
+			return;
+		}
+
+		if (preview) {
+			setError('');
+		}
+	}, [preview, previewError]);
 
 	if (!cartItems.length) {
 		return <Navigate to="/panier" replace />;
@@ -94,7 +89,7 @@ export default function CheckoutReviewPage() {
 				cartItems.map((item) => updateQuantity(item.product.idProduit ?? item.product.id, 0, { notify: false }))
 			);
 			await queryClient.invalidateQueries({ queryKey: queryKeys.notifications.list });
-			clearCheckoutDraft();
+			clearDraft();
 			toast.showSuccess(`Commande #${result.order.idCommande} validée.`);
 			navigate(`/commandes/${result.order.idCommande}`, { replace: true });
 		} catch (checkoutError) {

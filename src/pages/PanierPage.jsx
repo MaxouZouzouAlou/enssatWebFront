@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useOutletContext } from 'react-router';
 import Alert from '../components/Alert.jsx';
 import { ActionButton } from '../components/Button.jsx';
@@ -6,8 +7,8 @@ import CartItem from '../components/header/CartItem';
 import PageShell from '../components/layout/PageShell.jsx';
 import SectionHeader from '../components/layout/SectionHeader.jsx';
 import SurfaceCard from '../components/layout/SurfaceCard.jsx';
+import { prefetchCheckoutContext } from '../features/checkout/useCheckoutContext/useCheckoutContext.js';
 import { clearCheckoutDraft } from '../features/checkout/checkoutDraft.js';
-import { fetchCheckoutContext } from '../services/orders-client.js';
 
 function estimateLineTotal(item) {
 	const quantity = Number(item.quantity || 0);
@@ -20,6 +21,7 @@ function estimateLineTotal(item) {
 
 export default function PanierPage() {
 	const navigate = useNavigate();
+	const queryClient = useQueryClient();
 	const {
 		cartError,
 		cartItems,
@@ -39,7 +41,7 @@ export default function PanierPage() {
 			navigate('/login');
 			return;
 		}
-		void fetchCheckoutContext().catch(() => null);
+		void prefetchCheckoutContext(queryClient).catch(() => null);
 		navigate('/commande/livraison');
 	};
 

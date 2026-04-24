@@ -12,7 +12,7 @@ import {
 	fetchRecurringOrders,
 	runRecurringOrderNow,
 	updateRecurringOrder
-} from '../services/orders-client.js';
+} from '../services/orders-client/orders-client.js';
 import { queryKeys } from '../utils/queryKeys.js';
 
 const STATUS_LABELS = {

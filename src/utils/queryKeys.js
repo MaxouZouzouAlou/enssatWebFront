@@ -22,6 +22,9 @@ export const queryKeys = {
 		recurring: ['orders', 'recurring'],
 		detail: (idCommande) => ['orders', 'detail', String(idCommande)],
 	},
+	checkout: {
+		context: ['checkout', 'context'],
+	},
 	loyalty: {
 		me: ['loyalty', 'me'],
 	},

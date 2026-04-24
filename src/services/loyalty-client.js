@@ -1,39 +1,28 @@
-import { API_BASE_URL } from './auth-client.js';
-
-async function parseResponse(response, defaultMessage) {
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data.error || defaultMessage);
-  }
-  return data;
-}
+import { requestJson } from './http-client.js';
 
 export async function fetchMyLoyalty() {
-  const response = await fetch(`${API_BASE_URL}/loyalty/me`, {
-    credentials: 'include',
+  return requestJson('/loyalty/me', {
+    defaultMessage: 'Impossible de charger la fidélité.'
   });
-  return parseResponse(response, 'Impossible de charger la fidélité.');
 }
 
 export async function claimLoyaltyChallenge(code) {
-  const response = await fetch(`${API_BASE_URL}/loyalty/challenges/${encodeURIComponent(code)}/claim`, {
+  return requestJson(`/loyalty/challenges/${encodeURIComponent(code)}/claim`, {
     method: 'POST',
-    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
     },
+    defaultMessage: 'Impossible de valider le défi.'
   });
-  return parseResponse(response, 'Impossible de valider le défi.');
 }
 
 export async function redeemVoucher(pointsToSpend = 1000) {
-  const response = await fetch(`${API_BASE_URL}/loyalty/redeem-voucher`, {
+  return requestJson('/loyalty/redeem-voucher', {
     method: 'POST',
-    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ pointsToSpend }),
+    defaultMessage: 'Impossible de convertir les points en bon.'
   });
-  return parseResponse(response, 'Impossible de convertir les points en bon.');
 }

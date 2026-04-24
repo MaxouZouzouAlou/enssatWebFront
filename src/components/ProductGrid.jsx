@@ -1,5 +1,5 @@
 import React from 'react';
-import ProductCard from './ProductCard';
+import ProductCard from './ProductCard/ProductCard';
 
 export default function ProductGrid({ products = [], addToCart = () => {}, onOpenProduct = () => {} }) {
   const visibleProducts = (products || []).filter(

@@ -1,73 +1,57 @@
-import { API_BASE_URL } from './auth-client.js';
-
-async function parseAdminResponse(response, defaultMessage) {
-	const data = await response.json().catch(() => ({}));
-	if (!response.ok) {
-		throw new Error(data.error || defaultMessage);
-	}
-	return data;
-}
+import { requestJson } from './http-client.js';
 
 export async function fetchAdminOverview() {
-	const response = await fetch(`${API_BASE_URL}/superadmin/overview`, {
-		credentials: 'include',
+	return requestJson('/superadmin/overview', {
+		defaultMessage: "Impossible de charger la vue d'ensemble superadmin."
 	});
-	return parseAdminResponse(response, "Impossible de charger la vue d'ensemble superadmin.");
 }
 
 export async function fetchAdminAccounts() {
-	const response = await fetch(`${API_BASE_URL}/superadmin/accounts`, {
-		credentials: 'include',
+	return requestJson('/superadmin/accounts', {
+		defaultMessage: 'Impossible de charger les comptes.'
 	});
-	return parseAdminResponse(response, 'Impossible de charger les comptes.');
 }
 
 export async function deleteAdminAccount(authUserId) {
-	const response = await fetch(`${API_BASE_URL}/superadmin/accounts/${authUserId}`, {
+	return requestJson(`/superadmin/accounts/${authUserId}`, {
 		method: 'DELETE',
-		credentials: 'include',
+		defaultMessage: 'Impossible de supprimer ce compte.'
 	});
-	return parseAdminResponse(response, 'Impossible de supprimer ce compte.');
 }
 
 export async function fetchAdminCompanies() {
-	const response = await fetch(`${API_BASE_URL}/superadmin/companies`, {
-		credentials: 'include',
+	return requestJson('/superadmin/companies', {
+		defaultMessage: 'Impossible de charger les entreprises.'
 	});
-	return parseAdminResponse(response, 'Impossible de charger les entreprises.');
 }
 
 export async function deleteAdminCompany(idEntreprise) {
-	const response = await fetch(`${API_BASE_URL}/superadmin/companies/${idEntreprise}`, {
+	return requestJson(`/superadmin/companies/${idEntreprise}`, {
 		method: 'DELETE',
-		credentials: 'include',
+		defaultMessage: "Impossible de supprimer cette entreprise."
 	});
-	return parseAdminResponse(response, "Impossible de supprimer cette entreprise.");
 }
 
 export async function fetchAdminProducts() {
-	const response = await fetch(`${API_BASE_URL}/superadmin/products`, {
-		credentials: 'include',
+	return requestJson('/superadmin/products', {
+		defaultMessage: 'Impossible de charger les produits.'
 	});
-	return parseAdminResponse(response, 'Impossible de charger les produits.');
 }
 
 export async function updateAdminProductVisibility(idProduit, visible) {
-	const response = await fetch(`${API_BASE_URL}/superadmin/products/${idProduit}/visibility`, {
+	return requestJson(`/superadmin/products/${idProduit}/visibility`, {
 		method: 'PATCH',
 		headers: {
 			'Content-Type': 'application/json'
 		},
-		credentials: 'include',
-		body: JSON.stringify({ visible })
+		body: JSON.stringify({ visible }),
+		defaultMessage: 'Impossible de mettre a jour la visibilite du produit.'
 	});
-	return parseAdminResponse(response, 'Impossible de mettre à jour la visibilité du produit.');
 }
 
 export async function deleteAdminProduct(idProduit) {
-	const response = await fetch(`${API_BASE_URL}/superadmin/products/${idProduit}`, {
+	return requestJson(`/superadmin/products/${idProduit}`, {
 		method: 'DELETE',
-		credentials: 'include',
+		defaultMessage: 'Impossible de supprimer ce produit.'
 	});
-	return parseAdminResponse(response, 'Impossible de supprimer ce produit.');
 }

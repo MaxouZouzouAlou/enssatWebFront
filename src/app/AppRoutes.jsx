@@ -1,12 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Navigate, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router';
-import PageTransition from '../components/PageTransition.jsx';
-import Header from '../components/header/Header.jsx';
-import SiteFooter from '../components/SiteFooter.jsx';
+import { useEffect } from 'react';
+import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router';
 import useAuthProfile from '../features/auth/useAuthProfile';
-import useCart from '../hooks/useCart';
+import useSelectedProfessionalCompany from '../features/dashboard/useSelectedProfessionalCompany/useSelectedProfessionalCompany';
+import useCart from '../hooks/useCart/useCart';
 import useNotifications from '../hooks/useNotifications';
-import AccountPage from '../pages/AccountPage.jsx';
+import AccountPage from '../pages/AccountPage/AccountPage.jsx';
 import CheckoutDeliveryPage from '../pages/CheckoutDeliveryPage.jsx';
 import CheckoutPaymentPage from '../pages/CheckoutPaymentPage.jsx';
 import CheckoutReviewPage from '../pages/CheckoutReviewPage.jsx';
@@ -14,7 +12,7 @@ import IncidentTicketsPage from '../pages/IncidentTicketsPage.jsx';
 import HomePage from '../pages/HomePage.jsx';
 import LoginPage from '../pages/LoginPage.jsx';
 import LegalMentionsPage from '../pages/LegalMentionsPage.jsx';
-import LoyaltyPage from '../pages/LoyaltyPage.jsx';
+import LoyaltyPage from '../pages/LoyaltyPage/LoyaltyPage.jsx';
 import OrderDetailPage from '../pages/OrderDetailPage.jsx';
 import OrderHistoryPage from '../pages/OrderHistoryPage.jsx';
 import PanierPage from '../pages/PanierPage.jsx';
@@ -26,44 +24,13 @@ import ProducerPage from '../pages/ProducerPage.jsx';
 import RegisterPage from '../pages/RegisterPage.jsx';
 import ResetPasswordPage from '../pages/ResetPasswordPage.jsx';
 import SettingsPage from '../pages/SettingsPage.jsx';
-import SuperAdminPage from '../pages/SuperAdminPage.jsx';
+import SuperAdminPage from '../pages/SuperAdminPage/SuperAdminPage.jsx';
 import TermsOfUsePage from '../pages/TermsOfUsePage.jsx';
-import InteractiveMapPage from '../pages/InteractiveMapPage.jsx';
+import InteractiveMapPage from '../pages/InteractiveMapPage/InteractiveMapPage.jsx';
 import { authClient } from '../services/auth-client';
+import { AppShell, AuthLayout, MarketplaceLayout } from './AppLayouts.jsx';
+import { getLogoutRedirectPath, LoadingPage, RequireAuth, RequireGuest, RequireProfessional, RequireSuperAdmin } from './routeGuards.jsx';
 import { useToast } from './ToastProvider.jsx';
-
-const protectedPaths = new Set(['/compte', '/commandes', '/fidelite', '/dashboard-producteur', '/espace-pro', '/superadmin', '/tickets-incidents', '/commande/livraison', '/commande/paiement', '/commande/verification']);
-
-
-export function getLogoutRedirectPath(pathname) {
-	return protectedPaths.has(pathname) ? '/' : null;
-}
-
-function MarketplaceLayout({
-	addToCart,
-	cartError,
-	cartItems,
-	clearCartError,
-	removeFromCart,
-	updateQuantity,
-	profile,
-	isAuthenticated,
-	accountType
-}) {
-	return <Outlet context={{ addToCart, cartError, cartItems, clearCartError, removeFromCart, updateQuantity, profile, isAuthenticated, accountType }} />;
-}
-
-function AuthLayout() {
-	return <Outlet />;
-}
-
-function LoadingPage() {
-	return (
-		<main className="flex min-h-screen items-center justify-center bg-neutral-100 text-secondary-600">
-			Chargement...
-		</main>
-	);
-}
 
 export default function AppRoutes() {
 	const navigate = useNavigate();
@@ -103,184 +70,159 @@ export default function AppRoutes() {
 	const isSuperAdmin = accountType === 'superadmin';
 	const professionalId = profile?.professionnel?.id;
 	const isProfileLoading = Boolean(profileState.loading);
-	const professionalCompanies = useMemo(() => {
-		if (!profile?.professionnel) return [];
-
-		if (Array.isArray(profile.professionnel.entreprises) && profile.professionnel.entreprises.length > 0) {
-			return profile.professionnel.entreprises;
-		}
-
-		if (profile.professionnel.entreprise) {
-			return [profile.professionnel.entreprise];
-		}
-
-		return [];
-	}, [profile]);
-	const [selectedProfessionalCompanyId, setSelectedProfessionalCompanyId] = useState(null);
-
-	useEffect(() => {
-		if (!isProfessional || !professionalCompanies.length) {
-			setSelectedProfessionalCompanyId(null);
-			return;
-		}
-
-		const companyExists = professionalCompanies.some(
-			(company) => String(company.id) === String(selectedProfessionalCompanyId)
-		);
-
-		if (!companyExists) {
-			setSelectedProfessionalCompanyId(String(professionalCompanies[0].id));
-		}
-	}, [isProfessional, professionalCompanies, selectedProfessionalCompanyId]);
-
-	const selectedProfessionalCompany = useMemo(() => {
-		if (!professionalCompanies.length) return null;
-		return (
-			professionalCompanies.find((company) => String(company.id) === String(selectedProfessionalCompanyId)) ||
-			professionalCompanies[0]
-		);
-	}, [professionalCompanies, selectedProfessionalCompanyId]);
+	const {
+		professionalCompanies,
+		selectedProfessionalCompany,
+		setSelectedProfessionalCompanyId
+	} = useSelectedProfessionalCompany({
+		isProfessional,
+		profile
+	});
 
 	if (sessionState.isPending) return <LoadingPage />;
 
-	const requireGuest = (element) => (
-		isAuthenticated ? <Navigate to="/compte" replace /> : element
-	);
-
-	const requireAuth = (element) => (
-		isAuthenticated ? element : <Navigate to="/login" replace />
-	);
-
-	const requireProfessional = (element) => {
-		if (!isAuthenticated) return <Navigate to="/login" replace />;
-		if (isProfileLoading) return <LoadingPage />;
-		if (!isProfessional || !professionalId) return <Navigate to="/compte" replace />;
-		return element;
-	};
-
-	const requireSuperAdmin = (element) => {
-		if (!isAuthenticated) return <Navigate to="/login" replace />;
-		if (isProfileLoading) return <LoadingPage />;
-		if (!isSuperAdmin) return <Navigate to="/compte" replace />;
-		return element;
-	};
-
-	return (
-		<Routes>
-			{/* Pages auth — sans header ni footer */}
-			<Route element={<AuthLayout />}>
-				<Route
-					path="/login"
-					element={requireGuest(<LoginPage onAuthenticated={refreshSessionAndOpenAccount} onSwitchToRegister={() => navigate('/register')} />)}
-				/>
-				<Route
-					path="/register"
-					element={requireGuest(<RegisterPage onSwitchToLogin={() => navigate('/login')} />)}
-				/>
-				<Route path="/reset-password" element={<ResetPasswordPage />} />
-			</Route>
-
-			{/* Reste de l'app — avec header et footer */}
-			<Route element={
-				<div className="min-h-screen bg-neutral-100">
-					<Header
-						cartCount={cartCount}
-						cartItems={cartItems}
-						isAuthenticated={isAuthenticated}
-						isProfessional={isProfessional}
-						isSuperAdmin={isSuperAdmin}
-						notifications={notifications}
-						notificationCount={unreadCount}
-						onMarkNotificationRead={markRead}
-						onMarkAllNotificationsRead={markAllRead}
-						onDeleteNotification={deleteNotif}
-						removeFromCart={removeFromCart}
-						onSignOut={signOut}
-						updateQuantity={updateQuantity}
+		return (
+			<Routes>
+				{/* Pages auth — sans header ni footer */}
+				<Route element={<AuthLayout />}>
+					<Route
+						path="/login"
+						element={(
+							<RequireGuest isAuthenticated={isAuthenticated}>
+								<LoginPage onAuthenticated={refreshSessionAndOpenAccount} onSwitchToRegister={() => navigate('/register')} />
+							</RequireGuest>
+						)}
 					/>
-					<div>
-						<PageTransition>
-							<Outlet />
-						</PageTransition>
-					</div>
-					<SiteFooter isAuthenticated={isAuthenticated} isProfessional={isProfessional} />
-				</div>
-			}>
-				<Route path="/" element={<HomePage isAuthenticated={isAuthenticated} isProfessional={isProfessional} />} />
-				<Route
-					path="/dashboard-producteur"
-					element={<Navigate to="/espace-pro" replace />}
-				/>
-				<Route
-					path="/espace-pro"
-					element={requireProfessional(
-						<ProfessionalDashboardPage
-							accountType={accountType}
-							professionalId={professionalId}
-							professionalCompanies={professionalCompanies}
-							selectedCompany={selectedProfessionalCompany}
-							onSelectCompany={setSelectedProfessionalCompanyId}
-						/>
-					)}
-				/>
-				<Route path="/tickets-incidents" element={requireAuth(<IncidentTicketsPage />)} />
-				<Route path="/commandes" element={requireAuth(<OrderHistoryPage />)} />
-				<Route path="/commandes/:idCommande" element={requireAuth(<OrderDetailPage />)} />
-				<Route path="/fidelite" element={requireAuth(<LoyaltyPage />)} />
-				<Route path="/superadmin" element={requireSuperAdmin(<SuperAdminPage />)} />
-				<Route path="/carte-interactive" element={<InteractiveMapPage />} />
-				<Route path="/producteurs/:idProfessionnel" element={<ProducerPage isAuthenticated={isAuthenticated} accountType={accountType} />} />
-				<Route path="/mentions-legales" element={<LegalMentionsPage />} />
-				<Route path="/confidentialite" element={<PrivacyPolicyPage />} />
-				<Route path="/conditions-utilisation" element={<TermsOfUsePage />} />
-				<Route element={
-					<MarketplaceLayout
-						addToCart={addToCart}
-						cartError={cartError}
-						cartItems={cartItems}
-						clearCartError={clearCartError}
-						removeFromCart={removeFromCart}
-						updateQuantity={updateQuantity}
-						profile={profile}
-						isAuthenticated={isAuthenticated}
-						accountType={accountType}
+					<Route
+						path="/register"
+						element={(
+							<RequireGuest isAuthenticated={isAuthenticated}>
+								<RegisterPage onSwitchToLogin={() => navigate('/login')} />
+							</RequireGuest>
+						)}
 					/>
-				}>
-					<Route path="/produits/:idProduit" element={<ProductDetailPage />} />
-					<Route path="/achat" element={<Navigate to="/produits" replace />} />
-					<Route path="/produits" element={<ProductsPage />} />
-					<Route path="/panier" element={<PanierPage />} />
-					<Route path="/commande/livraison" element={requireAuth(<CheckoutDeliveryPage />)} />
-					<Route path="/commande/paiement" element={requireAuth(<CheckoutPaymentPage />)} />
-					<Route path="/commande/verification" element={requireAuth(<CheckoutReviewPage />)} />
+					<Route path="/reset-password" element={<ResetPasswordPage />} />
 				</Route>
+
+				{/* Reste de l'app — avec header et footer */}
 				<Route
-					path="/compte"
-					element={requireAuth(
-							<AccountPage
-								profile={profile}
-								profileState={profileState}
-								signOut={signOut}
-								user={sessionState.data?.user}
-								isProfessional={isProfessional}
-								professionalCompanies={professionalCompanies}
-								onSelectProfessionalCompany={setSelectedProfessionalCompanyId}
-								onProfileRefresh={refreshSession}
-							/>
-					)}
-				/>
-				<Route
-					path="/parametres"
-					element={requireAuth(
-						<SettingsPage
-							profile={profile}
-							user={sessionState.data?.user}
-							onSaved={refreshSession}
+					element={(
+						<AppShell
+							cartCount={cartCount}
+							cartItems={cartItems}
+							isAuthenticated={isAuthenticated}
+							isProfessional={isProfessional}
+							isSuperAdmin={isSuperAdmin}
+							notifications={notifications}
+							notificationCount={unreadCount}
+							onMarkNotificationRead={markRead}
+							onMarkAllNotificationsRead={markAllRead}
+							onDeleteNotification={deleteNotif}
+							removeFromCart={removeFromCart}
+							onSignOut={signOut}
+							updateQuantity={updateQuantity}
 						/>
 					)}
-				/>
-				<Route path="*" element={<Navigate to="/" replace />} />
-			</Route>
-		</Routes>
+				>
+					<Route path="/" element={<HomePage isAuthenticated={isAuthenticated} isProfessional={isProfessional} />} />
+					<Route
+						path="/dashboard-producteur"
+						element={<Navigate to="/espace-pro" replace />}
+					/>
+					<Route
+						path="/espace-pro"
+						element={(
+							<RequireProfessional
+								isAuthenticated={isAuthenticated}
+								isProfessional={isProfessional}
+								isProfileLoading={isProfileLoading}
+								professionalId={professionalId}
+							>
+								<ProfessionalDashboardPage
+									accountType={accountType}
+									professionalId={professionalId}
+									professionalCompanies={professionalCompanies}
+									selectedCompany={selectedProfessionalCompany}
+									onSelectCompany={setSelectedProfessionalCompanyId}
+								/>
+							</RequireProfessional>
+						)}
+					/>
+					<Route path="/tickets-incidents" element={<RequireAuth isAuthenticated={isAuthenticated}><IncidentTicketsPage /></RequireAuth>} />
+					<Route path="/commandes" element={<RequireAuth isAuthenticated={isAuthenticated}><OrderHistoryPage /></RequireAuth>} />
+					<Route path="/commandes/:idCommande" element={<RequireAuth isAuthenticated={isAuthenticated}><OrderDetailPage /></RequireAuth>} />
+					<Route path="/fidelite" element={<RequireAuth isAuthenticated={isAuthenticated}><LoyaltyPage /></RequireAuth>} />
+					<Route
+						path="/superadmin"
+						element={(
+							<RequireSuperAdmin
+								isAuthenticated={isAuthenticated}
+								isProfileLoading={isProfileLoading}
+								isSuperAdmin={isSuperAdmin}
+							>
+								<SuperAdminPage />
+							</RequireSuperAdmin>
+						)}
+					/>
+					<Route path="/carte-interactive" element={<InteractiveMapPage />} />
+					<Route path="/producteurs/:idProfessionnel" element={<ProducerPage isAuthenticated={isAuthenticated} accountType={accountType} />} />
+					<Route path="/mentions-legales" element={<LegalMentionsPage />} />
+					<Route path="/confidentialite" element={<PrivacyPolicyPage />} />
+					<Route path="/conditions-utilisation" element={<TermsOfUsePage />} />
+					<Route
+						element={(
+							<MarketplaceLayout
+								addToCart={addToCart}
+								cartError={cartError}
+								cartItems={cartItems}
+								clearCartError={clearCartError}
+								removeFromCart={removeFromCart}
+								updateQuantity={updateQuantity}
+								profile={profile}
+								isAuthenticated={isAuthenticated}
+								accountType={accountType}
+							/>
+						)}
+					>
+						<Route path="/produits/:idProduit" element={<ProductDetailPage />} />
+						<Route path="/achat" element={<Navigate to="/produits" replace />} />
+						<Route path="/produits" element={<ProductsPage />} />
+						<Route path="/panier" element={<PanierPage />} />
+						<Route path="/commande/livraison" element={<RequireAuth isAuthenticated={isAuthenticated}><CheckoutDeliveryPage /></RequireAuth>} />
+						<Route path="/commande/paiement" element={<RequireAuth isAuthenticated={isAuthenticated}><CheckoutPaymentPage /></RequireAuth>} />
+						<Route path="/commande/verification" element={<RequireAuth isAuthenticated={isAuthenticated}><CheckoutReviewPage /></RequireAuth>} />
+					</Route>
+					<Route
+						path="/compte"
+						element={(
+							<RequireAuth isAuthenticated={isAuthenticated}>
+								<AccountPage
+									profile={profile}
+									profileState={profileState}
+									signOut={signOut}
+									user={sessionState.data?.user}
+									isProfessional={isProfessional}
+									professionalCompanies={professionalCompanies}
+									onSelectProfessionalCompany={setSelectedProfessionalCompanyId}
+									onProfileRefresh={refreshSession}
+								/>
+							</RequireAuth>
+						)}
+					/>
+					<Route
+						path="/parametres"
+						element={(
+							<RequireAuth isAuthenticated={isAuthenticated}>
+								<SettingsPage
+									profile={profile}
+									user={sessionState.data?.user}
+									onSaved={refreshSession}
+								/>
+							</RequireAuth>
+						)}
+					/>
+					<Route path="*" element={<Navigate to="/" replace />} />
+				</Route>
+			</Routes>
 	);
 }

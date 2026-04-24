@@ -7,11 +7,10 @@ import SectionHeader from '../components/layout/SectionHeader.jsx';
 import SurfaceCard from '../components/layout/SurfaceCard.jsx';
 import productsService from '../services/products';
 import { fetchProductReviews, postProductReview } from '../services/reviews-client.js';
+import { resolveProductImageUrl } from '../utils/productMedia.js';
 import { formatProductStock, isUnitProduct } from '../utils/cartQuantity.js';
 import { useToast } from '../app/ToastProvider.jsx';
 import { queryKeys } from '../utils/queryKeys.js';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:49161';
 
 function formatPrice(price, isUnit) {
 	const value = Number(price || 0);
@@ -29,16 +28,6 @@ function normalizeIdentity(value) {
 		.replace(/[\u0300-\u036f]/g, '')
 		.trim()
 		.toLowerCase();
-}
-
-function resolveProductImageUrl(imageValue) {
-	if (!imageValue || typeof imageValue !== 'string') return null;
-	const trimmed = imageValue.trim();
-	if (!trimmed) return null;
-	if (/^https?:\/\//i.test(trimmed) || trimmed.startsWith('data:')) return trimmed;
-	const base = API_BASE_URL.replace(/\/$/, '');
-	const normalizedPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
-	return `${base}${normalizedPath}`;
 }
 
 function getCompanyName(product) {

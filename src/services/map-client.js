@@ -1,29 +1,13 @@
-import { API_BASE_URL } from './auth-client.js';
+import { requestJson } from './http-client.js';
 
 export async function fetchMapLocations() {
-  const response = await fetch(`${API_BASE_URL}/map/lieux`, {
-    credentials: 'include',
+  return requestJson('/map/lieux', {
+    defaultMessage: 'Impossible de charger les lieux de vente.'
   });
-
-  const data = await response.json().catch(() => ({}));
-
-  if (!response.ok) {
-    throw new Error(data.error || 'Impossible de charger les lieux de vente.');
-  }
-
-  return data;
 }
 
 export async function fetchOffersByLocation(idLieu) {
-  const response = await fetch(`${API_BASE_URL}/map/lieux/${idLieu}/offres`, {
-    credentials: 'include',
+  return requestJson(`/map/lieux/${idLieu}/offres`, {
+    defaultMessage: 'Impossible de charger les offres de ce lieu.'
   });
-
-  const data = await response.json().catch(() => ({}));
-
-  if (!response.ok) {
-    throw new Error(data.error || 'Impossible de charger les offres de ce lieu.');
-  }
-
-  return data;
 }

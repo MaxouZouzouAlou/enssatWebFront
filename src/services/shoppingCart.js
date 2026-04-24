@@ -1,102 +1,64 @@
-import { API_BASE_URL } from './auth-client.js';
-
-async function parseOptionalJson(response, fallbackMessage) {
-    const text = await response.text().catch(() => '');
-
-    if (!response.ok) {
-        let details = text;
-        try {
-            const data = text ? JSON.parse(text) : {};
-            details = data.error || data.message || text;
-        } catch (err) {
-            details = text;
-        }
-        throw new Error(fallbackMessage + (details ? `: ${details}` : ''));
-    }
-
-    if (!text) return null;
-
-    try {
-        return JSON.parse(text);
-    } catch (err) {
-        console.warn('shoppingCartService: response not JSON', text);
-        return null;
-    }
-}
+import { requestOptionalJson } from './http-client.js';
 
 async function getShoppingCarts() {
-    const response = await fetch(`${API_BASE_URL}/shoppingCart`, {
+    return requestOptionalJson('/shoppingCart', {
         method: 'GET',
-        credentials: 'include'
+        fallbackMessage: 'Failed to fetch shopping carts'
     });
-
-    return parseOptionalJson(response, 'Failed to fetch shopping carts');
 }
 
 async function getCurrentShoppingCart() {
-    const response = await fetch(`${API_BASE_URL}/shoppingCart/me`, {
+    return requestOptionalJson('/shoppingCart/me', {
         method: 'POST',
-        credentials: 'include'
+        fallbackMessage: 'Failed to resolve shopping cart'
     });
-
-    return parseOptionalJson(response, 'Failed to resolve shopping cart');
 }
 
 async function getCurrentShoppingCartItems() {
-    const response = await fetch(`${API_BASE_URL}/shoppingCart/me/items`, {
+    return requestOptionalJson('/shoppingCart/me/items', {
         method: 'GET',
-        credentials: 'include'
+        fallbackMessage: 'Failed to fetch shopping cart items'
     });
-
-    return parseOptionalJson(response, 'Failed to fetch shopping cart items');
 }
 
 async function getShoppingCartItems(idPanier) {
-    const response = await fetch(`${API_BASE_URL}/shoppingCart/${idPanier}/items`, {
+    return requestOptionalJson(`/shoppingCart/${idPanier}/items`, {
         method: 'GET',
-        credentials: 'include'
+        fallbackMessage: 'Failed to fetch shopping cart items'
     });
-
-    return parseOptionalJson(response, 'Failed to fetch shopping cart items');
 }
 
 async function addProductToShoppingCart(idProduit, quantite = 1) {
-    const response = await fetch(`${API_BASE_URL}/shoppingCart/item`, {
+    return requestOptionalJson('/shoppingCart/item', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        credentials: 'include',
-        body: JSON.stringify({ idProduit, quantite })
+        body: JSON.stringify({ idProduit, quantite }),
+        fallbackMessage: 'Failed to add product to shopping cart'
     });
-
-    return parseOptionalJson(response, 'Failed to add product to shopping cart');
 }
 
 async function removeProductFromShoppingCart(idProduit, quantite = 1) {
-    const response = await fetch(`${API_BASE_URL}/shoppingCart/single`, {
+    return requestOptionalJson('/shoppingCart/single', {
         method: 'DELETE',
         headers: {
             'Content-Type': 'application/json'
         },
-        credentials: 'include',
-        body: JSON.stringify({ idProduit, quantite })
+        body: JSON.stringify({ idProduit, quantite }),
+        fallbackMessage: 'Failed to remove product from shopping cart'
     });
-
-    return parseOptionalJson(response, 'Failed to remove product from shopping cart');
 }
 
 async function removeProductsFromShoppingCart(idProduit) {
-    const response = await fetch(`${API_BASE_URL}/shoppingCart/list`, {
+    return requestOptionalJson('/shoppingCart/list', {
         method: 'DELETE',
         headers: {
             'Content-Type': 'application/json'
         },
-        credentials: 'include',
-        body: JSON.stringify({ idProduit })
+        body: JSON.stringify({ idProduit }),
+        fallbackMessage: 'Failed to remove product from shopping cart'
     });
-
-    return parseOptionalJson(response, 'Failed to remove product from shopping cart');
 }
 
 const shoppingCartService = {

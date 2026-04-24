@@ -1,36 +1,41 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, useNavigate, useOutletContext } from 'react-router';
 import { ActionButton } from '../components/Button.jsx';
+import useCheckoutDraft from '../features/checkout/useCheckoutDraft/useCheckoutDraft.js';
+import useCheckoutPreview from '../features/checkout/useCheckoutPreview/useCheckoutPreview.js';
 import CheckoutStepShell from '../features/checkout/CheckoutStepShell.jsx';
-import CheckoutSummaryCard from '../features/checkout/CheckoutSummaryCard.jsx';
-import { loadCheckoutDraft, saveCheckoutDraft } from '../features/checkout/checkoutDraft.js';
+import CheckoutSummaryCard from '../features/checkout/CheckoutSummaryCard/CheckoutSummaryCard.jsx';
+import useCheckoutContext from '../features/checkout/useCheckoutContext/useCheckoutContext.js';
 import PageShell from '../components/layout/PageShell.jsx';
 import SectionHeader from '../components/layout/SectionHeader.jsx';
 import SurfaceCard from '../components/layout/SurfaceCard.jsx';
 import { fetchMyLoyalty } from '../services/loyalty-client.js';
-import { fetchCheckoutContext, getCachedCheckoutContext, previewCheckout } from '../services/orders-client.js';
 
 export default function CheckoutPaymentPage() {
 	const navigate = useNavigate();
 	const { accountType, cartItems } = useOutletContext();
-	const draft = useMemo(() => loadCheckoutDraft(), []);
-	const [context, setContext] = useState(() => getCachedCheckoutContext());
+	const { draft, saveDraft } = useCheckoutDraft();
+	const { data: context, error: contextError } = useCheckoutContext();
 	const [loyalty, setLoyalty] = useState(null);
-	const [preview, setPreview] = useState(draft.preview || null);
 	const [paymentMode, setPaymentMode] = useState(draft.modePaiement || 'carte_bancaire');
 	const [voucherId, setVoucherId] = useState(draft.voucherId || null);
 	const [error, setError] = useState('');
+	const { preview, error: previewError } = useCheckoutPreview({
+		payload: {
+			modeLivraison: draft.modeLivraison,
+			modePaiement: paymentMode,
+			relayId: draft.relayId,
+			adresseLivraison: draft.adresseLivraison,
+			pickupAssignments: draft.pickupAssignments,
+			voucherId
+		},
+		enabled: Boolean(draft.modeLivraison),
+		initialPreview: draft.preview || null,
+		errorMessage: 'Impossible de recalculer le paiement.'
+	});
 
 	useEffect(() => {
 		let ignore = false;
-
-		fetchCheckoutContext()
-			.then((data) => {
-				if (!ignore) setContext(data);
-			})
-			.catch((fetchError) => {
-				if (!ignore) setError(fetchError.message || 'Impossible de charger le paiement.');
-			});
 
 		if (accountType === 'particulier') {
 			fetchMyLoyalty()
@@ -48,33 +53,21 @@ export default function CheckoutPaymentPage() {
 	}, [accountType]);
 
 	useEffect(() => {
-		let ignore = false;
-		if (!draft.modeLivraison) return () => {
-			ignore = true;
-		};
+		if (contextError) {
+			setError(contextError.message || 'Impossible de charger le paiement.');
+		}
+	}, [contextError]);
 
-		previewCheckout({
-			modeLivraison: draft.modeLivraison,
-			modePaiement: paymentMode,
-			relayId: draft.relayId,
-			adresseLivraison: draft.adresseLivraison,
-			pickupAssignments: draft.pickupAssignments,
-			voucherId
-		})
-			.then((data) => {
-				if (!ignore) {
-					setPreview(data);
-					setError('');
-				}
-			})
-			.catch((previewError) => {
-				if (!ignore) setError(previewError.message || 'Impossible de recalculer le paiement.');
-			});
+	useEffect(() => {
+		if (previewError) {
+			setError(previewError);
+			return;
+		}
 
-		return () => {
-			ignore = true;
-		};
-	}, [draft.adresseLivraison, draft.modeLivraison, draft.pickupAssignments, draft.relayId, paymentMode, voucherId]);
+		if (preview) {
+			setError('');
+		}
+	}, [preview, previewError]);
 
 	if (!cartItems.length) {
 		return <Navigate to="/panier" replace />;
@@ -85,7 +78,7 @@ export default function CheckoutPaymentPage() {
 	}
 
 	const goNext = () => {
-		saveCheckoutDraft({
+		saveDraft({
 			...draft,
 			modePaiement: paymentMode,
 			voucherId,

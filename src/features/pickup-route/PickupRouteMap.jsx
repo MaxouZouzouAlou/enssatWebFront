@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import L from 'leaflet';
-import { MapContainer, Marker, Polyline, Popup, TileLayer } from 'react-leaflet';
+import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
@@ -15,6 +15,17 @@ L.Icon.Default.mergeOptions({
 function formatAddress(stop) {
 	if (!stop?.adresse) return '';
 	return [stop.adresse.ligne, stop.adresse.codePostal, stop.adresse.ville].filter(Boolean).join(', ');
+}
+
+function MapViewportController({ center, zoom }) {
+	const map = useMap();
+
+	useEffect(() => {
+		if (!Array.isArray(center) || center.length !== 2) return;
+		map.setView(center, zoom);
+	}, [center, map, zoom]);
+
+	return null;
 }
 
 export default function PickupRouteMap({ stops = [], className = '' }) {
@@ -42,6 +53,7 @@ export default function PickupRouteMap({ stops = [], className = '' }) {
 		<div className={`overflow-hidden rounded-2xl border border-neutral-200 ${className}`}>
 			<div className="h-[280px] w-full">
 				<MapContainer center={center} zoom={12} scrollWheelZoom className="h-full w-full">
+					<MapViewportController center={center} zoom={12} />
 					<TileLayer
 						attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
 						url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

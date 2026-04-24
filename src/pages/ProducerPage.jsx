@@ -17,7 +17,10 @@ function resolveImageUrl(imageValue) {
 	if (!trimmed) return null;
 	if (/^https?:\/\//i.test(trimmed) || trimmed.startsWith('data:')) return trimmed;
 	const base = API_BASE_URL.replace(/\/$/, '');
-	const normalizedPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+	let normalizedPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+	if (normalizedPath.startsWith('/src/images/')) {
+		normalizedPath = normalizedPath.replace('/src/images/', '/images/');
+	}
 	return `${base}${normalizedPath}`;
 }
 
@@ -148,7 +151,7 @@ export default function ProducerPage({ isAuthenticated = false, accountType = 'p
 							<img
 								alt={`${profile.prenom} ${profile.nom}`}
 								src={photoUrl}
-								className="absolute inset-0 h-full w-full object-cover opacity-90"
+								className="absolute inset-0 h-full w-full object-cover object-top opacity-95"
 								onError={() => setImageError(true)}
 							/>
 						) : (

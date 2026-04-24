@@ -107,8 +107,6 @@ function AchatPage() {
 		};
 	}, []);
 
-	console.log('Achat page products:', products);
-
 	if (loading) {
 		return (
 			<PageShell contentClassName="flex min-h-[50vh] items-center justify-center">
